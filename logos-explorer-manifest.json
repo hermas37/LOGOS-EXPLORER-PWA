@@ -1,0 +1,123 @@
+[
+  {
+    "episodeId": "episode-1",
+    "title": "The Mountain and the Road",
+    "subtitle": "Eternity, Time, and Freedom",
+    "heavyMedia": {
+      "spreadsheetUrl": "https://vercel-blob.com/logos_production_worksheet-v2.xlsx",
+      "infographicUrl": "https://vercel-blob.com/logos_mountain_road_infographic.png",
+      "fullAudioUrl": "https://vercel-blob.com/mountain_road_deep_dive.mp3",
+      "coercedLoveAudioUrl": "https://vercel-blob.com/coerced_love_analysis.mp3"
+    },
+    "studySelector": [
+      { "id": "script", "label": "📖 Read: Master Script", "type": "script" },
+      { "id": "quotes", "label": "✨ Quotes & Verses", "type": "quotes" },
+      { "id": "slides", "label": "🛝 View: Presentation Slides", "type": "slides" },
+      { "id": "audio-deep", "label": "🎧 Listen: Deep Dive Audio", "type": "audio" },
+      { "id": "audio-love", "label": "🎧 Listen: Forced Love Analysis", "type": "audio" },
+      { "id": "quiz", "label": "🧩 Play: Interactive Quiz", "type": "quiz" },
+      { "id": "flashcards", "label": "🃏 Study: Key Glossary Cards", "type": "flashcards" },
+      { "id": "mindmap", "label": "🌿 Map: Interactive Mind Map", "type": "mindmap" }
+    ],
+    "quizData": [
+      {
+        "question": "Why does cosmologist George Ellis argue that the static 'block universe' is physically incomplete?",
+        "options": [
+          "It fails to capture irreversible processes like quantum measurement and life.",
+          "It contradicts Einstein's theory of general relativity.",
+          "It claims the flow of time is physically real.",
+          "It completely denies the existence of space-time."
+        ],
+        "answer": 0,
+        "explanation": "Ellis points out that static block models rely on time-reversible microphysical equations but fail to explain irreversible physical processes like quantum wave-function collapse and the forward-directed history of living systems."
+      },
+      {
+        "question": "What does Boethius's definition of eternity imply about God's knowledge of our future actions?",
+        "options": [
+          "God knows the future in advance, causing our actions to become necessary.",
+          "God predicts our future choices with high probability.",
+          "God sees all times in a single, timeless 'now' without causing our choices.",
+          "God is inside time and waits patiently to see what we decide."
+        ],
+        "answer": 2,
+        "explanation": "Boethius defined eternity as the whole of endless life possessed all at once. God sees our past, present, and future in a single perfect present. Seeing our choice in His 'now' does not cause it, just as watching a man walk across a garden does not force his steps."
+      },
+      {
+        "question": "How do N. Ewing and Joan Vaccaro reconcile temporal flow within a static block universe?",
+        "options": [
+          "By proving that the block universe is completely false.",
+          "By showing that real time-passage and quantum presence are consistent with a 4D block.",
+          "By arguing that our conscious experience of time is a complete illusion.",
+          "By stating that only the literal present moment is real."
+        ],
+        "answer": 1,
+        "explanation": "These 'bridge theories' argue that real, mind-independent temporal passage (Ewing) and quantum-level progression through time (Vaccaro) are mathematically and structurally consistent with a completed four-dimensional block universe."
+      },
+      {
+        "question": "In Maximus the Confessor's theology, what is the relationship between the 'Logos' and the 'Tropos'?",
+        "options": [
+          "The Logos is our free journey, while the Tropos is the fixed destination.",
+          "The Logos is the eternal blueprint/melody; the Tropos is our free manner of playing it.",
+          "They are two opposing gods fighting for control of the road.",
+          "They prove that human free will is a total illusion."
+        ],
+        "answer": 1,
+        "explanation": "The Logos represents God's unchangeable, loving blueprint for who we are meant to be (the sheet music). The Tropos represents our free, dynamic 'manner' of walking the road (how we perform the piece)."
+      },
+      {
+        "question": "Why is 'freely grown love that was installed by force' a logical impossibility?",
+        "options": [
+          "Because God's power runs short in temporal environments.",
+          "Because it is a logical contradiction in terms, like a 'square circle'.",
+          "Because human beings always reject force automatically.",
+          "Because it requires more computing energy than the universe contains."
+        ],
+        "answer": 1,
+        "explanation": "Love is structurally an active history of real, uncoerced choices. A forced love is a logical absurdity (a square circle). Bypassing free progression would create a programmed machine, not a genuine companion capable of mutual love."
+      }
+    ],
+    "flashcardData": [
+      { "term": "Logos", "definition": "Greek for 'word'. The eternal, unchangeable blueprint or design of who God meant you to become, held in His love like a perfect sheet of music." },
+      { "term": "Tropos", "definition": "Greek for 'mode' or 'manner'. The dynamic, free path through which you choose to walk your journey. The performance of the music." },
+      { "term": "Boethian Eternity", "definition": "The complete possession of endless life all at once in a single, timeless present. God's perspective from the mountaintop." },
+      { "term": "Block Universe", "definition": "A 4D cosmological model where past, present, and future all co-exist as a static landscape. Time does not flow; our experience moves through it." },
+      { "term": "Presentism", "definition": "The view that only the literal present moment exists. The past is gone, and the future does not yet exist." },
+      { "term": "Bridge Theories", "definition": "Models (by Ewing and Vaccaro) showing how real, objective time-passage can exist structurally inside a static 4D block universe." }
+    ],
+    "mindmapData": {
+      "name": "The Mountain and the Road",
+      "children": [
+        {
+          "name": "Vantage Points",
+          "children": [
+            { "name": "The Road: Linear progression, open choices" },
+            { "name": "The Mountain: Timeless perfect present" }
+          ]
+        },
+        {
+          "name": "Two Freedoms",
+          "children": [
+            { "name": "Logos: The eternal musical composition" },
+            { "name": "Tropos: Our dynamic, free performance" }
+          ]
+        },
+        {
+          "name": "Scientific Bridges",
+          "children": [
+            { "name": "Einstein: Static block universe (eternalism)" },
+            { "name": "Ewing (2025): Structural, non-dynamic passage" },
+            { "name": "Vaccaro (2018): Quantum progression through the block" }
+          ]
+        },
+        {
+          "name": "Sovereign Love",
+          "children": [
+            { "name": "Forced Love: Logical impossibility (square circle)" },
+            { "name": "Divine Precision: Patient persuasion over coercion" },
+            { "name": "Prayer: Real-time alignment shaping God's eternal now" }
+          ]
+        }
+      ]
+    }
+  }
+]
