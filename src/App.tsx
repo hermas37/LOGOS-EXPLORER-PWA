@@ -4,6 +4,7 @@ import { BookOpen, Shield, ShieldAlert, Sparkles, Compass, Cpu, HelpCircle, Acti
 import { EpisodeManifest } from './types';
 import UserDashboard from './components/UserDashboard';
 import AdminDashboard from './components/AdminDashboard';
+import backupManifest from '../logos-explorer-manifest.json';
 
 export default function App() {
   const [dashboard, setDashboard] = useState<'user' | 'admin'>('user');
@@ -20,23 +21,23 @@ export default function App() {
     try {
       const response = await fetch('/api/episodes');
       if (response.ok) {
-        const data = await response.json();
-        setManifests(data);
-      } else {
-        throw new Error('Failed to fetch manifests from backend');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          setManifests(data);
+          setErrorMessage('');
+          setLoading(false);
+          return;
+        }
       }
+      throw new Error('API offline or not returning JSON');
     } catch (err: any) {
       console.warn('API error, falling back to static backup manifest:', err);
-      // Fallback fallback if API is not yet running
-      try {
-        const localResponse = await fetch('/logos-explorer-manifest.json');
-        if (localResponse.ok) {
-          const data = await localResponse.json();
-          setManifests(data);
-        } else {
-          setErrorMessage('Database error: Unable to load manifest backup.');
-        }
-      } catch (localErr: any) {
+      // Statically imported local manifest fallback (100% reliable even on static hosting like Vercel)
+      if (backupManifest && Array.isArray(backupManifest) && backupManifest.length > 0) {
+        setManifests(backupManifest as EpisodeManifest[]);
+        setErrorMessage('');
+      } else {
         setErrorMessage('Severe database error: No manifest available.');
       }
     } finally {
