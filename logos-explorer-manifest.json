@@ -10,14 +10,46 @@
       "coercedLoveAudioUrl": "https://vercel-blob.com/coerced_love_analysis.mp3"
     },
     "studySelector": [
-      { "id": "script", "label": "📖 Read: Master Script", "type": "script" },
-      { "id": "quotes", "label": "✨ Quotes & Verses", "type": "quotes" },
-      { "id": "slides", "label": "🛝 View: Presentation Slides", "type": "slides" },
-      { "id": "audio-deep", "label": "🎧 Listen: Deep Dive Audio", "type": "audio" },
-      { "id": "audio-love", "label": "🎧 Listen: Forced Love Analysis", "type": "audio" },
-      { "id": "quiz", "label": "🧩 Play: Interactive Quiz", "type": "quiz" },
-      { "id": "flashcards", "label": "🃏 Study: Key Glossary Cards", "type": "flashcards" },
-      { "id": "mindmap", "label": "🌿 Map: Interactive Mind Map", "type": "mindmap" }
+      {
+        "id": "script",
+        "label": "Master Script",
+        "type": "script"
+      },
+      {
+        "id": "quotes",
+        "label": "Quotes & Verses",
+        "type": "quotes"
+      },
+      {
+        "id": "slides",
+        "label": "Presentation Slides",
+        "type": "slides"
+      },
+      {
+        "id": "audio-deep",
+        "label": "Deep Dive Audio",
+        "type": "audio"
+      },
+      {
+        "id": "audio-love",
+        "label": "Forced Love Analysis",
+        "type": "audio"
+      },
+      {
+        "id": "quiz",
+        "label": "Interactive Quiz",
+        "type": "quiz"
+      },
+      {
+        "id": "flashcards",
+        "label": "Key Glossary Cards",
+        "type": "flashcards"
+      },
+      {
+        "id": "mindmap",
+        "label": "Interactive Mind Map",
+        "type": "mindmap"
+      }
     ],
     "quizData": [
       {
@@ -77,12 +109,30 @@
       }
     ],
     "flashcardData": [
-      { "term": "Logos", "definition": "Greek for 'word'. The eternal, unchangeable blueprint or design of who God meant you to become, held in His love like a perfect sheet of music." },
-      { "term": "Tropos", "definition": "Greek for 'mode' or 'manner'. The dynamic, free path through which you choose to walk your journey. The performance of the music." },
-      { "term": "Boethian Eternity", "definition": "The complete possession of endless life all at once in a single, timeless present. God's perspective from the mountaintop." },
-      { "term": "Block Universe", "definition": "A 4D cosmological model where past, present, and future all co-exist as a static landscape. Time does not flow; our experience moves through it." },
-      { "term": "Presentism", "definition": "The view that only the literal present moment exists. The past is gone, and the future does not yet exist." },
-      { "term": "Bridge Theories", "definition": "Models (by Ewing and Vaccaro) showing how real, objective time-passage can exist structurally inside a static 4D block universe." }
+      {
+        "term": "Logos",
+        "definition": "Greek for 'word'. The eternal, unchangeable blueprint or design of who God meant you to become, held in His love like a perfect sheet of music."
+      },
+      {
+        "term": "Tropos",
+        "definition": "Greek for 'mode' or 'manner'. The dynamic, free path through which you choose to walk your journey. The performance of the music."
+      },
+      {
+        "term": "Boethian Eternity",
+        "definition": "The complete possession of endless life all at once in a single, timeless present. God's perspective from the mountaintop."
+      },
+      {
+        "term": "Block Universe",
+        "definition": "A 4D cosmological model where past, present, and future all co-exist as a static landscape. Time does not flow; our experience moves through it."
+      },
+      {
+        "term": "Presentism",
+        "definition": "The view that only the literal present moment exists. The past is gone, and the future does not yet exist."
+      },
+      {
+        "term": "Bridge Theories",
+        "definition": "Models (by Ewing and Vaccaro) showing how real, objective time-passage can exist structurally inside a static 4D block universe."
+      }
     ],
     "mindmapData": {
       "name": "The Mountain and the Road",
@@ -90,31 +140,51 @@
         {
           "name": "Vantage Points",
           "children": [
-            { "name": "The Road: Linear progression, open choices" },
-            { "name": "The Mountain: Timeless perfect present" }
+            {
+              "name": "The Road: Linear progression, open choices"
+            },
+            {
+              "name": "The Mountain: Timeless perfect present"
+            }
           ]
         },
         {
           "name": "Two Freedoms",
           "children": [
-            { "name": "Logos: The eternal musical composition" },
-            { "name": "Tropos: Our dynamic, free performance" }
+            {
+              "name": "Logos: The eternal musical composition"
+            },
+            {
+              "name": "Tropos: Our dynamic, free performance"
+            }
           ]
         },
         {
           "name": "Scientific Bridges",
           "children": [
-            { "name": "Einstein: Static block universe (eternalism)" },
-            { "name": "Ewing (2025): Structural, non-dynamic passage" },
-            { "name": "Vaccaro (2018): Quantum progression through the block" }
+            {
+              "name": "Einstein: Static block universe (eternalism)"
+            },
+            {
+              "name": "Ewing (2025): Structural, non-dynamic passage"
+            },
+            {
+              "name": "Vaccaro (2018): Quantum progression through the block"
+            }
           ]
         },
         {
           "name": "Sovereign Love",
           "children": [
-            { "name": "Forced Love: Logical impossibility (square circle)" },
-            { "name": "Divine Precision: Patient persuasion over coercion" },
-            { "name": "Prayer: Real-time alignment shaping God's eternal now" }
+            {
+              "name": "Forced Love: Logical impossibility (square circle)"
+            },
+            {
+              "name": "Divine Precision: Patient persuasion over coercion"
+            },
+            {
+              "name": "Prayer: Real-time alignment shaping God's eternal now"
+            }
           ]
         }
       ]
