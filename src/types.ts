@@ -30,8 +30,10 @@ export interface MindmapNode {
 
 export interface EpisodeManifest {
   episodeId: string;
+  episodeNumber?: number;
   title: string;
   subtitle: string;
+  transcriptUrl?: string;
   heavyMedia: HeavyMedia;
   studySelector: StudyOption[];
   quizData: QuizQuestion[];
