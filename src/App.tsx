@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { BookOpen, Shield, ShieldAlert, Sparkles, Compass, Cpu, HelpCircle, Activity } from 'lucide-react';
+import { BookOpen, Shield, ShieldAlert, Sparkles, Compass, Cpu, HelpCircle, Activity, Eye } from 'lucide-react';
 import { EpisodeManifest } from './types';
 import UserDashboard from './components/UserDashboard';
 import AdminDashboard from './components/AdminDashboard';
@@ -70,14 +70,14 @@ export default function App() {
         className="relative w-full max-w-[432px] h-[100dvh] md:h-[768px] bg-[#0f172a] shadow-2xl border-x border-slate-800 flex flex-col z-10 md:rounded-3xl overflow-hidden"
       >
         {/* TOP GLASSMORPHISM APP BAR */}
-        <header className="shrink-0 px-6 pt-7 pb-6 bg-[#0f172a]/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-30">
-          <div className="flex flex-col items-center justify-center text-center">
+        <header className="shrink-0 px-6 pt-7 pb-6 bg-[#0f172a]/80 backdrop-blur-md border-b border-white/5 sticky top-0 z-30 overflow-hidden">
+          <div className="flex flex-col items-center justify-center text-center relative">
             <h1 className="text-2xl font-black tracking-[0.25em] text-[#d97706] uppercase" style={{ fontFamily: '"Arial Black", "Arial Bold", Gadget, sans-serif' }}>LOGOS-EXPLORER</h1>
             <p className="text-[13px] md:text-sm font-extrabold text-white leading-relaxed mt-2.5 max-w-[340px]">
               Explore Reality. Discover the Logos.
             </p>
-            <div className="mt-5 pt-4 border-t border-white/5 w-full">
-              <p className="text-[11px] font-bold text-slate-300 leading-relaxed max-w-[360px] mx-auto uppercase tracking-wide">
+            <div className="mt-5 pt-4 border-t border-white/5 w-full flex items-center justify-center text-center">
+              <p className="text-[11px] font-bold text-slate-300 leading-relaxed uppercase tracking-wide">
                 <span className="text-amber-500 font-extrabold">GUIDE:</span> FOLLOW THE SEQUENCE BELOW
               </p>
             </div>
@@ -157,7 +157,7 @@ export default function App() {
         </main>
 
         {/* NAVIGATION: BOTTOM BAR */}
-        <footer className="shrink-0 h-20 bg-slate-900/90 backdrop-blur-xl border-t border-white/5 flex items-center justify-around px-8">
+        <footer className="shrink-0 h-20 bg-slate-900/90 backdrop-blur-xl border-t border-white/5 flex items-center justify-around px-8 overflow-hidden">
           <button
             onClick={() => setDashboard('user')}
             className={`flex flex-col items-center gap-1 transition-all cursor-pointer ${
