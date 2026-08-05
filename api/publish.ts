@@ -20,6 +20,16 @@ async function gh(path: string, init: RequestInit = {}) {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Use POST' });
 
+  if (req.headers['x-debug'] === 'yes') {
+    return res.status(200).json({
+      hasPassword: !!process.env.ADMIN_PASSWORD,
+      length: process.env.ADMIN_PASSWORD?.length ?? 0,
+      first2: process.env.ADMIN_PASSWORD?.slice(0, 2) ?? null,
+      hasGithubToken: !!process.env.GITHUB_TOKEN,
+      repo: process.env.GITHUB_REPO ?? null,
+    });
+  }
+
   if (req.headers['x-admin-password'] !== process.env.ADMIN_PASSWORD) {
     return res.status(401).json({ error: 'Wrong password' });
   }
