@@ -198,9 +198,9 @@ export default function UserDashboard({
         
         {/* Study Mode Bar */}
         <div className="flex items-center justify-between gap-2 pb-0.5">
-          <span className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3 text-amber-400" />
-            <span>Johannine Study Portal</span>
+          <span className="text-xs sm:text-sm font-extrabold text-amber-500 uppercase tracking-wider flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>STUDY PORTAL</span>
           </span>
         </div>
 
