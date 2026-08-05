@@ -1,4 +1,4 @@
-﻿import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const REPO = process.env.GITHUB_REPO!;
 const BRANCH = process.env.GITHUB_BRANCH || 'main';
