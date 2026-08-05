@@ -145,34 +145,48 @@ export default function UserDashboard({
     return '';
   };
 
-  const getStudyIcon = (type: string) => {
+  const cleanTabLabel = (label: string) => {
+    if (!label) return '';
+    return label
+      .replace(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}\u{2300}-\u{23FF}\u{2B50}\u{2B55}\u{2934}\u{2935}\u{25AA}\u{25AB}\u{25FE}\u{25FD}\u{2B05}\u{2B06}\u{2B07}\u{2194}-\u{2199}\u{21A9}\u{21AA}\u{2934}\u{2935}\u{25C0}\u{25B6}\u{23E9}-\u{23EC}\u{23F0}\u{23F3}]+\s*/gu, '')
+      .replace(/^(Read|View|Listen|Play|Study|Map):\s*/i, '')
+      .trim();
+  };
+
+  const getStudyIcon = (type: string, id?: string) => {
+    if (id === 'quotes' || type === 'quotes') return <Quote className="w-3.5 h-3.5 shrink-0" />;
     switch (type) {
       case 'script':
-        return <BookOpen className="w-4 h-4" />;
+        return <BookOpen className="w-3.5 h-3.5 shrink-0" />;
       case 'slides':
-        return <Presentation className="w-4 h-4" />;
+        return <Presentation className="w-3.5 h-3.5 shrink-0" />;
       case 'audio':
-        return <Music className="w-4 h-4" />;
+        return <Music className="w-3.5 h-3.5 shrink-0" />;
       case 'quiz':
-        return <HelpCircle className="w-4 h-4" />;
+        return <HelpCircle className="w-3.5 h-3.5 shrink-0" />;
       case 'flashcards':
-        return <Layers className="w-4 h-4" />;
+        return <Layers className="w-3.5 h-3.5 shrink-0" />;
       case 'mindmap':
-        return <Network className="w-4 h-4" />;
+        return <Network className="w-3.5 h-3.5 shrink-0" />;
+      case 'infographic':
+        return <ImageIcon className="w-3.5 h-3.5 shrink-0" />;
       default:
-        return <BookOpen className="w-4 h-4" />;
+        return <BookOpen className="w-3.5 h-3.5 shrink-0" />;
     }
   };
 
   const getActiveExploreLabel = () => {
-    if (selectedStudyId === 'script') return 'Core Insights';
+    if (selectedStudyId === 'script') return 'Master Script';
+    if (selectedStudyId === 'quotes') return 'Quotes & Verses';
     if (selectedStudyId === 'infographic') return 'Infographic';
     if (selectedStudyId === 'slides') return 'Slide Deck';
-    if (selectedStudyId === 'audio-deep' || selectedStudyId === 'audio-love') return 'Audio Overview';
+    if (selectedStudyId === 'audio-deep') return 'Deep Dive Audio';
+    if (selectedStudyId === 'audio-love') return 'Forced Love Audio';
     if (selectedStudyId === 'video') return 'Video Overview';
     if (selectedStudyId === 'reports') return 'Reports';
-    if (selectedStudyId === 'quiz') return 'Quizzes';
-    if (selectedStudyId === 'flashcards') return 'Flashcards';
+    if (selectedStudyId === 'quiz') return 'Interactive Quiz';
+    if (selectedStudyId === 'flashcards') return 'Glossary Cards';
+    if (selectedStudyId === 'mindmap') return 'Mind Map';
     return 'Explore';
   };
 
@@ -182,6 +196,14 @@ export default function UserDashboard({
       {/* 1. Episode Selection Header */}
       <div className="px-6 py-4 bg-[#0f172a] border-b border-white/5 shrink-0 flex flex-col gap-3 relative z-50">
         
+        {/* Study Mode Bar */}
+        <div className="flex items-center justify-between gap-2 pb-0.5">
+          <span className="text-[10px] font-mono font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-amber-400" />
+            <span>Johannine Study Portal</span>
+          </span>
+        </div>
+
         {/* Language Selector */}
         <div className="relative">
           <button
@@ -190,12 +212,17 @@ export default function UserDashboard({
               setIsDropdownOpen(false); // Close other menu
               setIsExploreMenuOpen(false); // Close other menu
             }}
-            className="w-full bg-black border-2 border-[#d97706] hover:bg-slate-900 active:scale-[0.99] transition-all rounded-lg px-8 py-3 flex flex-col items-center justify-center text-center shadow-lg shadow-[#d97706]/15 cursor-pointer relative"
+            className="w-full bg-slate-950 border border-[#d97706]/70 hover:bg-slate-900 hover:border-[#d97706] active:scale-[0.99] transition-all rounded-xl px-5 py-2.5 flex items-center justify-between shadow-md shadow-[#d97706]/10 cursor-pointer relative group"
           >
-            <span className="font-extrabold text-white text-xs md:text-sm tracking-widest uppercase">
-              1. LANGUAGE SELECTOR
-            </span>
-            <ChevronRight className="w-4 h-4 text-[#d97706] absolute right-4 shrink-0" style={{ strokeWidth: 3 }} />
+            <div className="flex flex-col text-left pr-4 overflow-hidden">
+              <span className="font-extrabold text-[#d97706] text-[10px] tracking-widest uppercase">
+                1. LANGUAGE SELECTOR
+              </span>
+              <span className="text-xs font-semibold text-slate-100 truncate">
+                {selectedLanguage}
+              </span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-[#d97706] shrink-0 transition-transform group-hover:translate-x-0.5" style={{ strokeWidth: 2.5 }} />
           </button>
 
           {/* Language Dropdown Container */}
@@ -223,20 +250,20 @@ export default function UserDashboard({
                           setSelectedLanguage(lang);
                           setIsLanguageDropdownOpen(false);
                         }}
-                        className={`w-full px-4 py-3.5 flex items-center justify-between text-left text-xs transition-colors hover:bg-slate-900/60 cursor-pointer ${
+                        className={`w-full px-4 py-3 flex items-center justify-between text-left text-xs transition-colors hover:bg-slate-900/60 cursor-pointer ${
                           isSelected ? 'text-amber-400 font-bold bg-[#d97706]/5' : 'text-slate-300 font-medium'
                         }`}
                       >
-                        <span className="text-sm font-semibold text-slate-100">{lang}</span>
+                        <span className="text-xs font-semibold text-slate-100">{lang}</span>
                         
                         {/* Circle selector */}
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
                           isSelected 
                             ? 'border-[#d97706] bg-[#d97706]/10' 
                             : 'border-slate-700 bg-slate-900'
                         }`}>
                           {isSelected && (
-                            <div className="w-2.5 h-2.5 rounded-full bg-[#d97706] shadow-sm shadow-[#d97706]/50" />
+                            <div className="w-2 h-2 rounded-full bg-[#d97706] shadow-sm shadow-[#d97706]/50" />
                           )}
                         </div>
                       </button>
@@ -256,12 +283,17 @@ export default function UserDashboard({
               setIsLanguageDropdownOpen(false); // Close other menu
               setIsExploreMenuOpen(false); // Close other menu
             }}
-            className="w-full bg-black border-2 border-[#d97706] hover:bg-slate-900 active:scale-[0.99] transition-all rounded-lg px-8 py-3 flex flex-col items-center justify-center text-center shadow-lg shadow-[#d97706]/15 cursor-pointer relative"
+            className="w-full bg-slate-950 border border-[#d97706]/70 hover:bg-slate-900 hover:border-[#d97706] active:scale-[0.99] transition-all rounded-xl px-5 py-2.5 flex items-center justify-between shadow-md shadow-[#d97706]/10 cursor-pointer relative group"
           >
-            <span className="font-extrabold text-white text-xs md:text-sm tracking-widest uppercase">
-              2. AVAILABLE EPISODE SELECTOR
-            </span>
-            <ChevronRight className="w-4 h-4 text-[#d97706] absolute right-4 shrink-0" style={{ strokeWidth: 3 }} />
+            <div className="flex flex-col text-left pr-4 overflow-hidden">
+              <span className="font-extrabold text-[#d97706] text-[10px] tracking-widest uppercase">
+                2. AVAILABLE EPISODE SELECTOR
+              </span>
+              <span className="text-xs font-semibold text-slate-100 truncate">
+                {currentEpisode?.title ? `Ep ${currentEpisode.episodeNumber || 1}: ${currentEpisode.title}` : 'Select Episode'}
+              </span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-[#d97706] shrink-0 transition-transform group-hover:translate-x-0.5" style={{ strokeWidth: 2.5 }} />
           </button>
 
           {/* Dropdown Container */}
@@ -290,23 +322,23 @@ export default function UserDashboard({
                           setSelectedStudyId('script'); // Reset study category on switch
                           setIsDropdownOpen(false);
                         }}
-                        className={`w-full px-4 py-3.5 flex items-center justify-between text-left text-xs transition-colors hover:bg-slate-900/60 cursor-pointer ${
+                        className={`w-full px-4 py-3 flex items-center justify-between text-left text-xs transition-colors hover:bg-slate-900/60 cursor-pointer ${
                           isSelected ? 'text-amber-400 font-bold bg-[#d97706]/5' : 'text-slate-300 font-medium'
                         }`}
                       >
                         <div className="flex flex-col gap-0.5 pr-4">
-                          <span className="text-sm font-semibold text-slate-100">{manifest.title}</span>
+                          <span className="text-xs font-semibold text-slate-100">{manifest.title}</span>
                           <span className="text-[10px] text-slate-400 font-normal">{manifest.subtitle}</span>
                         </div>
                         
                         {/* Circle selector */}
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
                           isSelected 
                             ? 'border-[#d97706] bg-[#d97706]/10' 
                             : 'border-slate-700 bg-slate-900'
                         }`}>
                           {isSelected && (
-                            <div className="w-2.5 h-2.5 rounded-full bg-[#d97706] shadow-sm shadow-[#d97706]/50" />
+                            <div className="w-2 h-2 rounded-full bg-[#d97706] shadow-sm shadow-[#d97706]/50" />
                           )}
                         </div>
                       </button>
@@ -326,12 +358,23 @@ export default function UserDashboard({
               setIsDropdownOpen(false); // Close other menu
               setIsLanguageDropdownOpen(false); // Close other menu
             }}
-            className="w-full bg-black border-2 border-[#d97706] hover:bg-slate-900 active:scale-[0.99] transition-all rounded-lg px-8 py-3 flex flex-col items-center justify-center text-center shadow-lg shadow-[#d97706]/15 cursor-pointer relative"
+            className="w-full bg-slate-950 border border-[#d97706]/70 hover:bg-slate-900 hover:border-[#d97706] active:scale-[0.99] transition-all rounded-xl px-5 py-2.5 flex items-center justify-between shadow-md shadow-[#d97706]/10 cursor-pointer relative group"
           >
-            <span className="font-extrabold text-white text-xs md:text-sm tracking-widest uppercase">
-              3. STUDY & PRESENTATION SELECTOR
-            </span>
-            <ChevronRight className="w-4 h-4 text-[#d97706] absolute right-4 shrink-0" style={{ strokeWidth: 3 }} />
+            <div className="flex flex-col text-left pr-4 overflow-hidden">
+              <span className="font-extrabold text-[#d97706] text-[10px] tracking-widest uppercase">
+                3. STUDY & PRESENTATION SELECTOR
+              </span>
+              <div className="flex items-center gap-2 mt-0.5 text-xs font-semibold text-slate-100 truncate">
+                <span className="text-amber-400 shrink-0">
+                  {getStudyIcon(
+                    currentEpisode.studySelector?.find((s) => s.id === selectedStudyId)?.type || 'script',
+                    selectedStudyId
+                  )}
+                </span>
+                <span className="truncate">{getActiveExploreLabel()}</span>
+              </div>
+            </div>
+            <ChevronRight className={`w-4 h-4 text-[#d97706] shrink-0 transition-transform ${isExploreMenuOpen ? 'rotate-90' : 'group-hover:translate-x-0.5'}`} style={{ strokeWidth: 2.5 }} />
           </button>
 
           {/* Explore Dropdown Container */}
@@ -350,156 +393,45 @@ export default function UserDashboard({
                   transition={{ duration: 0.15 }}
                   className="absolute left-0 right-0 top-full mt-2 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-slate-900 max-h-[380px] overflow-y-auto custom-scrollbar"
                 >
-                  {/* Core Insights option */}
-                  <button
-                    onClick={() => {
-                      setSelectedStudyId('script');
-                      setIsExploreMenuOpen(false);
-                    }}
-                    className={`w-full px-4 py-3.5 flex items-center justify-between text-left text-xs transition-colors hover:bg-slate-900/60 cursor-pointer ${
-                      selectedStudyId === 'script' ? 'text-amber-400 font-bold bg-[#d97706]/5' : 'text-slate-300 font-medium'
-                    }`}
-                  >
-                    <span className="text-sm font-semibold text-slate-100">Core Insights</span>
-                    
-                    {/* Dot indicator */}
-                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                      selectedStudyId === 'script' 
-                        ? 'border-[#d97706] bg-[#d97706]/10' 
-                        : 'border-slate-700 bg-slate-900'
-                    }`}>
-                      {selectedStudyId === 'script' && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#d97706] shadow-sm shadow-[#d97706]/50" />
-                      )}
-                    </div>
-                  </button>
+                  {currentEpisode.studySelector.map((option) => {
+                    const isSelected = selectedStudyId === option.id;
+                    const displayLabel = cleanTabLabel(option.label);
+                    return (
+                      <button
+                        key={option.id}
+                        onClick={() => {
+                          setSelectedStudyId(option.id);
+                          setIsExploreMenuOpen(false);
+                        }}
+                        className={`w-full px-4 py-3 flex items-center justify-between text-left text-xs transition-colors hover:bg-slate-900/80 cursor-pointer ${
+                          isSelected ? 'text-amber-400 font-bold bg-[#d97706]/10' : 'text-slate-300 font-medium'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 truncate pr-3">
+                          <span className={isSelected ? 'text-amber-400' : 'text-slate-400'}>
+                            {getStudyIcon(option.type, option.id)}
+                          </span>
+                          <span className="text-xs font-semibold truncate">{displayLabel}</span>
+                        </div>
 
-                  {/* Inspiring Quotation / Bible Verses option */}
-                  <button
-                    onClick={() => {
-                      setSelectedStudyId('quotes');
-                      setIsExploreMenuOpen(false);
-                    }}
-                    className={`w-full px-4 py-3.5 flex items-center justify-between text-left text-xs transition-colors hover:bg-slate-900/60 cursor-pointer ${
-                      selectedStudyId === 'quotes' ? 'text-amber-400 font-bold bg-[#d97706]/5' : 'text-slate-300 font-medium'
-                    }`}
-                  >
-                    <span className="text-sm font-semibold text-slate-100">Inspiring Quotation / Bible Verses</span>
-                    
-                    {/* Dot indicator */}
-                    <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                      selectedStudyId === 'quotes' 
-                        ? 'border-[#d97706] bg-[#d97706]/10' 
-                        : 'border-slate-700 bg-slate-900'
-                    }`}>
-                      {selectedStudyId === 'quotes' && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-[#d97706] shadow-sm shadow-[#d97706]/50" />
-                      )}
-                    </div>
-                  </button>
-
-                  {/* Presentation Option expandable menu item */}
-                  <div className="flex flex-col">
-                    <button
-                      onClick={() => setIsPresentationSubMenuOpen(!isPresentationSubMenuOpen)}
-                      className={`w-full px-4 py-3.5 flex items-center justify-between text-left text-xs transition-colors hover:bg-slate-900/60 cursor-pointer ${
-                        selectedStudyId !== 'script' && selectedStudyId !== 'quotes' ? 'text-amber-400 font-bold bg-[#d97706]/5' : 'text-slate-300 font-medium'
-                      }`}
-                    >
-                      <span className="text-sm font-semibold text-slate-100">Presentation Option</span>
-                      
-                      <div className="flex items-center gap-2">
                         {/* Dot indicator */}
-                        <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                          selectedStudyId !== 'script' && selectedStudyId !== 'quotes' 
-                            ? 'border-[#d97706] bg-[#d97706]/10' 
+                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
+                          isSelected 
+                            ? 'border-[#d97706] bg-[#d97706]/20' 
                             : 'border-slate-700 bg-slate-900'
                         }`}>
-                          {selectedStudyId !== 'script' && selectedStudyId !== 'quotes' && (
-                            <div className="w-2.5 h-2.5 rounded-full bg-[#d97706] shadow-sm shadow-[#d97706]/50" />
+                          {isSelected && (
+                            <div className="w-2 h-2 rounded-full bg-[#d97706] shadow-sm shadow-[#d97706]/50" />
                           )}
                         </div>
-                        <ChevronDown className={`w-4 h-4 text-slate-500 transition-transform ${isPresentationSubMenuOpen ? 'rotate-180' : ''}`} />
-                      </div>
-                    </button>
-
-                    {/* Sub-options for Presentation Option */}
-                    <AnimatePresence>
-                      {isPresentationSubMenuOpen && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="bg-slate-900/40 pl-4 border-l border-[#d97706]/25 divide-y divide-slate-900 overflow-hidden"
-                        >
-                          {[
-                            { id: 'quotes', label: 'Inspiring Quotation / Bible Verses' },
-                            { id: 'infographic', label: 'Infographic' },
-                            { id: 'slides', label: 'Slide Deck' },
-                            { id: 'audio-deep', label: 'Audio Overview' },
-                            { id: 'video', label: 'Brief Video Overview' },
-                            { id: 'reports', label: 'Reports' },
-                            { id: 'quiz', label: 'Quizzes' },
-                            { id: 'flashcards', label: 'Flashcards' }
-                          ].map((opt) => {
-                            const isOptSelected = selectedStudyId === opt.id || (opt.id === 'audio-deep' && selectedStudyId === 'audio-love');
-                            return (
-                              <button
-                                key={opt.id}
-                                onClick={() => {
-                                  setSelectedStudyId(opt.id);
-                                  setIsExploreMenuOpen(false);
-                                }}
-                                className={`w-full px-4 py-3 flex items-center justify-between text-left text-xs transition-colors hover:bg-slate-900/60 cursor-pointer ${
-                                  isOptSelected ? 'text-amber-400 font-bold' : 'text-slate-400'
-                                }`}
-                              >
-                                <span className="font-semibold">{opt.label}</span>
-                                
-                                {/* Dot indicator */}
-                                <div className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                                  isOptSelected 
-                                    ? 'border-[#d97706] bg-[#d97706]/10' 
-                                    : 'border-slate-800 bg-slate-950'
-                                }`}>
-                                  {isOptSelected && (
-                                    <div className="w-2 h-2 rounded-full bg-[#d97706]" />
-                                  )}
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
+                      </button>
+                    );
+                  })}
                 </motion.div>
               </>
             )}
           </AnimatePresence>
         </div>
-      </div>
-
-      {/* 2. Horizontal Study Selector Navigation */}
-      <div className="shrink-0 flex gap-3 px-6 py-4 overflow-x-auto whitespace-nowrap border-b border-white/5 scrollbar-none">
-        {currentEpisode.studySelector.map((option) => {
-          const isActive = selectedStudyId === option.id;
-          return (
-            <button
-              key={option.id}
-              onClick={() => setSelectedStudyId(option.id)}
-              className={`px-4 py-2 rounded-full text-xs whitespace-nowrap transition-all duration-200 border cursor-pointer flex items-center gap-1.5 ${
-                isActive
-                  ? 'bg-[#d97706] font-semibold text-white border-transparent shadow-lg shadow-[#d97706]/20'
-                  : 'bg-slate-800/80 font-medium text-slate-300 border-slate-700 hover:text-slate-100 hover:bg-slate-750'
-              }`}
-            >
-              {getStudyIcon(option.type)}
-              <span>{option.label}</span>
-            </button>
-          );
-        })}
       </div>
 
       {/* 3. Main study material scroll container */}
