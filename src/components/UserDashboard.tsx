@@ -241,7 +241,7 @@ export default function UserDashboard({
                   transition={{ duration: 0.15 }}
                   className="absolute left-0 right-0 top-full mt-2 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-slate-900"
                 >
-                  {['Simplified English (Default)', 'Indonesian', 'Spanish'].map((lang) => {
+                  {['Simplified English (Default)'].map((lang) => {
                     const isSelected = selectedLanguage === lang;
                     return (
                       <button
