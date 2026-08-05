@@ -74,7 +74,7 @@ export default function App() {
           <div className="flex flex-col items-center justify-center text-center">
             <h1 className="text-2xl font-black tracking-[0.25em] text-[#d97706] uppercase" style={{ fontFamily: '"Arial Black", "Arial Bold", Gadget, sans-serif' }}>LOGOS-EXPLORER</h1>
             <p className="text-[13px] md:text-sm font-extrabold text-white leading-relaxed mt-2.5 max-w-[340px]">
-              Exploring Johannine Logos, the cosmic logic<br />transmitting Beauty & Wonder,<br />Purpose and Love.
+              Explore Reality. Discover the Logos.
             </p>
             <div className="mt-5 pt-4 border-t border-white/5 w-full">
               <p className="text-[11px] font-bold text-slate-300 leading-relaxed max-w-[360px] mx-auto uppercase tracking-wide">
