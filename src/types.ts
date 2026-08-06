@@ -28,6 +28,35 @@ export interface MindmapNode {
   children?: MindmapNode[];
 }
 
+/** The eight asset kinds the publishing console recognizes from a NotebookLM export batch. */
+export type AssetRole =
+  | 'audioOverview'
+  | 'videoOverview'
+  | 'slideDeck'
+  | 'infographic'
+  | 'report'
+  | 'transcript'
+  | 'flashcards'
+  | 'quiz';
+
+/** Where a published asset physically lives: the GitHub repo, or the Vercel Blob CDN. */
+export type AssetDestination = 'repo' | 'blob';
+
+export interface EpisodeAsset {
+  name: string;
+  size: number;
+  url: string;
+  dest: AssetDestination;
+}
+
+export interface Devotional {
+  quote: string;
+  quoteSource: string;
+  verse: string;
+  verseRef: string;
+  reflection: string;
+}
+
 export interface EpisodeManifest {
   episodeId: string;
   episodeNumber?: number;
@@ -39,4 +68,12 @@ export interface EpisodeManifest {
   quizData: QuizQuestion[];
   flashcardData: Flashcard[];
   mindmapData: MindmapNode;
+
+  /** Stable folder name under `episodes/`, frozen the first time the episode is published. */
+  slug?: string;
+  youtubeUrl?: string;
+  published?: boolean;
+  devotional?: Devotional;
+  /** Assets published through the console's drop-zone flow, keyed by role. */
+  assets?: Partial<Record<AssetRole, EpisodeAsset>>;
 }
