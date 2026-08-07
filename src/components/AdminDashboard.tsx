@@ -18,30 +18,32 @@ import {
   Eye,
   EyeOff,
   Headphones,
-  Film,
   Presentation,
-  HelpCircle,
   BookOpen,
   Layers,
+  Network,
   CircleCheck,
   CircleDashed,
   RotateCw,
   Image as ImageIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { AssetDestination, AssetRole, Devotional, EpisodeAsset, EpisodeManifest } from '../types';
+import type { AssetDestination, AssetRole, Devotional, EpisodeManifest, LanguageEntry } from '../types';
 
 /* ============================================================================
    PUBLISHING CONSOLE
    One drop zone. Files sort themselves into two lanes on filename + extension:
    LIGHT (text/data -> committed to the GitHub repo) and
    HEAVY (audio/video/images/pdf -> streamed to Vercel Blob CDN).
+   A trailing _en / _id / _es on the filename picks which language the asset
+   belongs to under languages[lang].assets — no suffix defaults to en.
    Tokens never touch this component — /api/blob-upload and /api/publish read
    them from server-side environment variables behind an admin password.
 ============================================================================ */
 
 const HEAVY: AssetDestination = 'blob';
 const LIGHT: AssetDestination = 'repo';
+const DEFAULT_LANG = 'en';
 
 interface RoleDef {
   key: AssetRole;
@@ -59,13 +61,7 @@ const ROLES: Record<AssetRole, RoleDef> = {
     key: 'audioOverview', label: 'Audio Overview', short: 'Audio',
     icon: Headphones, dest: HEAVY, ext: ['mp3', 'wav', 'm4a'],
     hints: ['audio', 'overview', 'deepdive', 'deep-dive', 'podcast', 'narration'],
-    blurb: 'The NotebookLM two-host conversation.',
-  },
-  videoOverview: {
-    key: 'videoOverview', label: 'Video Overview', short: 'Video',
-    icon: Film, dest: HEAVY, ext: ['mp4', 'mov', 'webm'],
-    hints: ['video', 'short', 'overview', 'clip'],
-    blurb: 'The short visual summary.',
+    blurb: 'The NotebookLM two-host conversation. Required for a language to be offered.',
   },
   slideDeck: {
     key: 'slideDeck', label: 'Slide Deck', short: 'Slides',
@@ -79,35 +75,36 @@ const ROLES: Record<AssetRole, RoleDef> = {
     hints: ['infographic', 'graphic', 'poster', 'diagram', 'chart'],
     blurb: 'One-page visual explainer.',
   },
+  mindmap: {
+    key: 'mindmap', label: 'Mindmap', short: 'Mindmap',
+    icon: Network, dest: LIGHT, ext: ['md'],
+    hints: ['mindmap', 'mind-map', 'map', 'concept', 'outline'],
+    blurb: 'Tabbed text concept outline, not an image.',
+  },
+  masterScript: {
+    key: 'masterScript', label: 'Master Script', short: 'Script',
+    icon: BookOpen, dest: LIGHT, ext: ['md', 'txt'],
+    hints: ['transcript', 'script', 'master', 'source', 'story'],
+    blurb: 'The single source story the episode came from.',
+  },
   report: {
     key: 'report', label: 'Report', short: 'Report',
     icon: FileText, dest: LIGHT, ext: ['md', 'txt'],
     hints: ['report', 'briefing', 'brief', 'study', 'guide', 'faq', 'timeline'],
     blurb: 'Briefing doc, study guide, FAQ.',
   },
-  transcript: {
-    key: 'transcript', label: 'Master Script', short: 'Script',
-    icon: BookOpen, dest: LIGHT, ext: ['md', 'txt'],
-    hints: ['transcript', 'script', 'master', 'source', 'story'],
-    blurb: 'The single source story the episode came from.',
-  },
   flashcards: {
     key: 'flashcards', label: 'Flashcards', short: 'Cards',
     icon: Layers, dest: LIGHT, ext: ['json', 'csv'],
     hints: ['flashcard', 'card', 'term', 'glossary', 'vocab'],
-    blurb: 'Greek terms and definitions.',
-  },
-  quiz: {
-    key: 'quiz', label: 'Quiz', short: 'Quiz',
-    icon: HelpCircle, dest: LIGHT, ext: ['json', 'csv'],
-    hints: ['quiz', 'question', 'assessment', 'test', 'check'],
-    blurb: 'Multiple-choice knowledge check.',
+    blurb: 'front / back / note pairs.',
   },
 };
 
 const ROLE_LIST = Object.values(ROLES);
 
 const EMPTY_DEVOTIONAL: Devotional = { quote: '', quoteSource: '', verse: '', verseRef: '', reflection: '' };
+const EMPTY_LANGUAGE_ENTRY: LanguageEntry = { assets: {}, devotional: null };
 
 /** Guess the role from filename keywords first, extension second. */
 function detectRole(fileName: string): { role: AssetRole | null; confident: boolean } {
@@ -124,6 +121,14 @@ function detectRole(fileName: string): { role: AssetRole | null; confident: bool
     if (score > bestScore) { bestScore = score; best = r; }
   }
   return best ? { role: best.key, confident: bestScore >= 5 } : { role: null, confident: false };
+}
+
+/** A trailing _en / _id / _es before the extension picks the language. No match falls back to en. */
+function detectLanguage(fileName: string): string {
+  const lower = fileName.toLowerCase();
+  const base = lower.replace(/\.[^.]+$/, '');
+  const match = base.match(/_([a-z]{2})$/);
+  return match ? match[1] : DEFAULT_LANG;
 }
 
 const fmtBytes = (n: number) => {
@@ -153,6 +158,7 @@ interface StagedFile {
   size: number;
   role: AssetRole | null;
   confident: boolean;
+  lang: string;
 }
 
 type StepStatus = 'pending' | 'active' | 'done' | 'error';
@@ -190,10 +196,18 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
     onManifestUpdate(manifests.map((m) => (m.episodeId === ep.episodeId ? { ...m, ...patch } : m)));
   }, [ep, manifests, onManifestUpdate]);
 
+  const updateLanguageEntry = useCallback((lang: string, patch: Partial<LanguageEntry>) => {
+    if (!ep) return;
+    const current = ep.languages[lang] ?? EMPTY_LANGUAGE_ENTRY;
+    const nextLanguages = { ...ep.languages, [lang]: { ...current, ...patch } };
+    onManifestUpdate(manifests.map((m) => (m.episodeId === ep.episodeId ? { ...m, languages: nextLanguages } : m)));
+  }, [ep, manifests, onManifestUpdate]);
+
   const addFiles = useCallback((fileList: FileList) => {
     const next: StagedFile[] = Array.from(fileList).map((f, i) => {
       const { role, confident } = detectRole(f.name);
-      return { uid: `${Date.now()}-${i}-${f.name}`, file: f, name: f.name, size: f.size, role, confident };
+      const lang = detectLanguage(f.name);
+      return { uid: `${Date.now()}-${i}-${f.name}`, file: f, name: f.name, size: f.size, role, confident, lang };
     });
     setStaged((prev) => [...prev, ...next]);
   }, []);
@@ -213,20 +227,14 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
     const id = `episode-${n}`;
     const fresh: EpisodeManifest = {
       episodeId: id,
-      episodeNumber: n,
+      sequence: n,
+      slug: '',
       title: 'Untitled episode',
       subtitle: '',
-      transcriptUrl: '',
-      heavyMedia: { spreadsheetUrl: '', infographicUrl: '', fullAudioUrl: '', coercedLoveAudioUrl: '' },
-      studySelector: [],
-      quizData: [],
-      flashcardData: [],
-      mindmapData: { name: 'Logos Root', children: [] },
-      slug: '',
-      youtubeUrl: '',
+      youtubeUrl: null,
       published: false,
-      devotional: { ...EMPTY_DEVOTIONAL },
-      assets: {},
+      defaultLanguage: DEFAULT_LANG,
+      languages: { [DEFAULT_LANG]: { assets: {}, devotional: { ...EMPTY_DEVOTIONAL } } },
     };
     onManifestUpdate([...manifests, fresh]);
     setEpId(id);
@@ -259,7 +267,11 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
     updateStep('validate', 'active');
 
     try {
-      const uploadedAssets: Partial<Record<AssetRole, EpisodeAsset>> = {};
+      // Assets uploaded this batch, grouped by the language detected from each filename.
+      const uploadedAssets: Record<string, Partial<Record<AssetRole, string>>> = {};
+      const putAsset = (lang: string, role: AssetRole, url: string) => {
+        uploadedAssets[lang] = { ...(uploadedAssets[lang] || {}), [role]: url };
+      };
 
       // Heavy files go to Blob first — the manifest needs their URLs.
       updateStep('validate', 'done');
@@ -272,7 +284,7 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
           clientPayload: JSON.stringify({ password }),
           onUploadProgress: (evt) => updateStep(stepId, 'active', `${Math.round(evt.percentage)}%`),
         });
-        uploadedAssets[f.role] = { name: f.name, size: f.size, url: blob.url, dest: HEAVY };
+        putAsset(f.lang, f.role, blob.url);
         updateStep(stepId, 'done', '100%');
       }
 
@@ -283,16 +295,22 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
           const dataUrl = await readAsDataURL(f.file);
           const contentBase64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
           const path = `episodes/${slug}/${f.name}`;
-          uploadedAssets[f.role] = { name: f.name, size: f.size, url: path, dest: LIGHT };
+          putAsset(f.lang, f.role, path);
           return { path, contentBase64 };
         })
       );
+
+      const nextLanguages = { ...ep.languages };
+      for (const [lang, assets] of Object.entries(uploadedAssets)) {
+        const current = nextLanguages[lang] ?? EMPTY_LANGUAGE_ENTRY;
+        nextLanguages[lang] = { ...current, assets: { ...current.assets, ...assets } };
+      }
 
       const updatedEpisode: EpisodeManifest = {
         ...ep,
         slug,
         published: true,
-        assets: { ...(ep.assets || {}), ...uploadedAssets },
+        languages: nextLanguages,
       };
       const updatedManifests = manifests.map((m) => (m.episodeId === ep.episodeId ? updatedEpisode : m));
       const manifestBase64 = utf8ToB64(JSON.stringify(updatedManifests, null, 2));
@@ -340,8 +358,13 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
   }
 
   const slug = ep.slug || slugify(ep.title) || ep.episodeId;
-  const devotional = ep.devotional ?? EMPTY_DEVOTIONAL;
-  const liveAssets = ep.assets ?? {};
+  const devotional = ep.languages[ep.defaultLanguage]?.devotional ?? EMPTY_DEVOTIONAL;
+  const liveAssets: Partial<Record<AssetRole, boolean>> = {};
+  for (const entry of Object.values(ep.languages)) {
+    for (const role of Object.keys(entry.assets) as AssetRole[]) {
+      if (entry.assets[role]) liveAssets[role] = true;
+    }
+  }
   const stagedRoles = new Set<AssetRole>(staged.map((s) => s.role).filter((r): r is AssetRole => !!r));
 
   return (
@@ -361,7 +384,7 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
                   on ? 'bg-amber-500 text-slate-950 border-amber-500' : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
                 }`}
               >
-                EP {String(m.episodeNumber ?? '?').padStart(2, '0')}
+                EP {String(m.sequence ?? '?').padStart(2, '0')}
                 {!m.published && <span className="opacity-70"> · draft</span>}
               </button>
             );
@@ -377,7 +400,7 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
         <div className="grid sm:grid-cols-2 gap-3 mt-5">
           <Field label="Episode title" value={ep.title} onChange={(v) => updateEp({ title: v })} />
           <Field label="Subtitle" value={ep.subtitle} onChange={(v) => updateEp({ subtitle: v })} />
-          <Field label="YouTube link" value={ep.youtubeUrl ?? ''} onChange={(v) => updateEp({ youtubeUrl: v })} mono />
+          <Field label="YouTube link" value={ep.youtubeUrl ?? ''} onChange={(v) => updateEp({ youtubeUrl: v || null })} mono />
           <div>
             <FieldLabel>Folder path (generated)</FieldLabel>
             <div className="font-mono text-xs px-3 py-2.5 rounded-lg truncate bg-slate-950 border border-slate-800 text-slate-500">
@@ -387,7 +410,7 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
         </div>
       </Step>
 
-      <Step n={2} title="Drop the Studio exports" caption="Select everything at once. Files sort themselves — you only fix what's marked.">
+      <Step n={2} title="Drop the Studio exports" caption="Select everything at once. Files sort themselves — you only fix what's marked. A trailing _en / _id / _es picks the language; no suffix means English.">
         <DropZone onFiles={addFiles} />
 
         {unknown.length > 0 && (
@@ -407,7 +430,7 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
         {staged.length > 0 && (
           <div className="grid md:grid-cols-2 gap-4 mt-5">
             <Lane title="Light — goes into the repo" sub="Text and data, versioned in git" icon={Github} accent="sky" rows={[...light, ...unknown]} onRole={setRole} onRemove={removeStaged} />
-            <Lane title="Heavy — goes to the CDN" sub="Audio, video, images, PDFs" icon={Cloud} accent="amber" rows={heavy} onRole={setRole} onRemove={removeStaged} />
+            <Lane title="Heavy — goes to the CDN" sub="Audio, images, PDFs" icon={Cloud} accent="amber" rows={heavy} onRole={setRole} onRemove={removeStaged} />
           </div>
         )}
 
@@ -415,7 +438,7 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
       </Step>
 
       <Step n={3} title="Write the devotional" caption="The part no notebook can generate. Optional, but it's why people come back.">
-        <Devo d={devotional} onChange={(d) => updateEp({ devotional: d })} />
+        <Devo d={devotional} onChange={(d) => updateLanguageEntry(ep.defaultLanguage, { devotional: d })} />
       </Step>
 
       <Step n={4} title="Publish" caption="One action: upload, commit, update the manifest, deploy.">
@@ -430,7 +453,7 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
         >
           {isPublishing
             ? <><Loader2 className="w-[15px] h-[15px] animate-spin" /> PUBLISHING…</>
-            : <>PUBLISH EPISODE {String(ep.episodeNumber ?? '').padStart(2, '0')} <ArrowRight className="w-[15px] h-[15px]" /></>}
+            : <>PUBLISH EPISODE {String(ep.sequence ?? '').padStart(2, '0')} <ArrowRight className="w-[15px] h-[15px]" /></>}
         </button>
 
         {!canPublish && !isPublishing && (
@@ -524,10 +547,10 @@ function DropZone({ onFiles }: { onFiles: (files: FileList) => void }) {
       <Upload className={`w-6 h-6 mx-auto ${over ? 'text-amber-400' : 'text-slate-500'}`} strokeWidth={1.4} />
       <div className="mt-4 text-lg text-slate-100">Drop your Studio exports here</div>
       <div className="text-sm mt-2 text-slate-400">
-        Audio, video, slides, infographic, reports, flashcards, quiz — all in one go.
+        Audio, slides, infographic, mindmap, reports, flashcards — all in one go.
       </div>
       <div className="font-mono text-xs mt-4 tracking-wider text-slate-600">
-        MP3 · WAV · M4A · MP4 · MOV · WEBM · PDF · PNG · JPG · WEBP · MD · TXT · JSON · CSV
+        MP3 · WAV · M4A · PDF · PNG · JPG · WEBP · MD · TXT · JSON · CSV
       </div>
     </div>
   );
@@ -595,7 +618,7 @@ function StagedRow({ r, onRole, onRemove }: {
 }
 
 function Coverage({ liveAssets, stagedRoles }: {
-  liveAssets: Partial<Record<AssetRole, EpisodeAsset>>; stagedRoles: Set<AssetRole>;
+  liveAssets: Partial<Record<AssetRole, boolean>>; stagedRoles: Set<AssetRole>;
 }) {
   return (
     <div className="mt-5">
@@ -679,25 +702,28 @@ function PublishLog({ p, onReset }: { p: PublishState; onReset: () => void }) {
 
 function ManifestPreview({ ep, staged, slug }: { ep: EpisodeManifest; staged: StagedFile[]; slug: string }) {
   const json = useMemo(() => {
-    const assets: Record<string, string> = {};
-    for (const [key, asset] of Object.entries(ep.assets || {})) {
-      if (!asset) continue;
-      assets[key] = asset.dest === HEAVY ? asset.url : `episodes/${slug}/${asset.name}`;
+    const languages: Record<string, { assets: Record<string, string>; devotional: Devotional | null }> = {};
+    for (const [lang, entry] of Object.entries(ep.languages)) {
+      languages[lang] = { assets: { ...entry.assets }, devotional: entry.devotional };
     }
     for (const s of staged) {
       if (!s.role) continue;
-      assets[s.role] = ROLES[s.role].dest === HEAVY
+      const url = ROLES[s.role].dest === HEAVY
         ? `https://<blob-store>.public.blob.vercel-storage.com/episodes/${slug}/${s.name}`
         : `episodes/${slug}/${s.name}`;
+      if (!languages[s.lang]) languages[s.lang] = { assets: {}, devotional: null };
+      languages[s.lang] = { ...languages[s.lang], assets: { ...languages[s.lang].assets, [s.role]: url } };
     }
     const out = {
       episodeId: ep.episodeId,
-      episodeNumber: ep.episodeNumber,
+      sequence: ep.sequence,
+      slug,
       title: ep.title,
       subtitle: ep.subtitle,
-      youtubeUrl: ep.youtubeUrl || null,
-      assets,
-      devotional: ep.devotional ?? EMPTY_DEVOTIONAL,
+      youtubeUrl: ep.youtubeUrl,
+      published: ep.published,
+      defaultLanguage: ep.defaultLanguage,
+      languages,
     };
     return JSON.stringify(out, null, 2);
   }, [ep, staged, slug]);

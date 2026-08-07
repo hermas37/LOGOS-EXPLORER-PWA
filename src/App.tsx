@@ -8,8 +8,8 @@ import backupManifest from '../logos-explorer-manifest.json';
 
 export default function App() {
   const [dashboard, setDashboard] = useState<'user' | 'admin'>('user');
-  const [selectedEpisodeId, setSelectedEpisodeId] = useState('episode-1');
-  const [selectedStudyId, setSelectedStudyId] = useState('script');
+  const [selectedEpisodeId, setSelectedEpisodeId] = useState('ep-01');
+  const [selectedStudyId, setSelectedStudyId] = useState('');
   
   // Manifest lists state
   const [manifests, setManifests] = useState<EpisodeManifest[]>([]);

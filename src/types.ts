@@ -1,43 +1,12 @@
-export interface HeavyMedia {
-  spreadsheetUrl: string;
-  infographicUrl: string;
-  fullAudioUrl: string;
-  coercedLoveAudioUrl: string;
-}
-
-export interface StudyOption {
-  id: string;
-  label: string;
-  type: 'script' | 'slides' | 'audio' | 'quiz' | 'flashcards' | 'mindmap' | 'quotes';
-}
-
-export interface QuizQuestion {
-  question: string;
-  options: string[];
-  answer: number;
-  explanation: string;
-}
-
-export interface Flashcard {
-  term: string;
-  definition: string;
-}
-
-export interface MindmapNode {
-  name: string;
-  children?: MindmapNode[];
-}
-
-/** The eight asset kinds the publishing console recognizes from a NotebookLM export batch. */
+/** The seven asset kinds a language entry can carry. `audioOverview` is required for a language to be offered at all. */
 export type AssetRole =
   | 'audioOverview'
-  | 'videoOverview'
   | 'slideDeck'
   | 'infographic'
+  | 'mindmap'
+  | 'masterScript'
   | 'report'
-  | 'transcript'
-  | 'flashcards'
-  | 'quiz';
+  | 'flashcards';
 
 /** Where a published asset physically lives: the GitHub repo, or the Vercel Blob CDN. */
 export type AssetDestination = 'repo' | 'blob';
@@ -57,23 +26,27 @@ export interface Devotional {
   reflection: string;
 }
 
+export interface LanguageEntry {
+  assets: Partial<Record<AssetRole, string>>;
+  /** Hand-written, native-translation devotional. Null when this language hasn't written one yet. */
+  devotional: Devotional | null;
+}
+
 export interface EpisodeManifest {
   episodeId: string;
-  episodeNumber?: number;
+  sequence: number;
+  slug: string;
   title: string;
   subtitle: string;
-  transcriptUrl?: string;
-  heavyMedia: HeavyMedia;
-  studySelector: StudyOption[];
-  quizData: QuizQuestion[];
-  flashcardData: Flashcard[];
-  mindmapData: MindmapNode;
+  youtubeUrl: string | null;
+  published: boolean;
+  /** The language every other language's missing assets fall back to. */
+  defaultLanguage: string;
+  languages: Record<string, LanguageEntry>;
+}
 
-  /** Stable folder name under `episodes/`, frozen the first time the episode is published. */
-  slug?: string;
-  youtubeUrl?: string;
-  published?: boolean;
-  devotional?: Devotional;
-  /** Assets published through the console's drop-zone flow, keyed by role. */
-  assets?: Partial<Record<AssetRole, EpisodeAsset>>;
+export interface Flashcard {
+  front: string;
+  back: string;
+  note?: string;
 }
