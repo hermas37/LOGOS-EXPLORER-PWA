@@ -294,9 +294,9 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
         light.map(async (f) => {
           const dataUrl = await readAsDataURL(f.file);
           const contentBase64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
-          const path = `episodes/${slug}/${f.name}`;
-          putAsset(f.lang, f.role, path);
-          return { path, contentBase64 };
+          const manifestPath = `episodes/${slug}/${f.name}`;
+          putAsset(f.lang, f.role, manifestPath);
+          return { path: `public/${manifestPath}`, contentBase64 };
         })
       );
 
