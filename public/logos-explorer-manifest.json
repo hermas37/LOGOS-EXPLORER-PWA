@@ -1,8 +1,8 @@
 [
   {
     "episodeId": "episode-1",
-    "title": "The Mountain and the Road",
-    "subtitle": "Eternity, Time, and Freedom",
+    "title": "New Heaven and New Earth",
+    "subtitle": "",
     "heavyMedia": {
       "spreadsheetUrl": "https://vercel-blob.com/logos_production_worksheet-v2.xlsx",
       "infographicUrl": "https://vercel-blob.com/logos_mountain_road_infographic.png",
@@ -188,6 +188,46 @@
           ]
         }
       ]
+    },
+    "slug": "new-heaven-and-new-earth",
+    "published": true,
+    "assets": {
+      "audioOverview": {
+        "name": "ep01_audio_overview_en.m4a",
+        "size": 12763436,
+        "url": "https://4gis32c7ro9bt3b7.public.blob.vercel-storage.com/episodes/new-heaven-and-new-earth/ep01_audio_overview_en.m4a",
+        "dest": "blob"
+      },
+      "infographic": {
+        "name": "ep01_infographic_en.webp",
+        "size": 480130,
+        "url": "https://4gis32c7ro9bt3b7.public.blob.vercel-storage.com/episodes/new-heaven-and-new-earth/ep01_infographic_en.webp",
+        "dest": "blob"
+      },
+      "slideDeck": {
+        "name": "ep01_slides_en.pdf",
+        "size": 31347066,
+        "url": "https://4gis32c7ro9bt3b7.public.blob.vercel-storage.com/episodes/new-heaven-and-new-earth/ep01_slides_en.pdf",
+        "dest": "blob"
+      },
+      "transcript": {
+        "name": "ep01_master_script_en.md",
+        "size": 25424,
+        "url": "episodes/new-heaven-and-new-earth/ep01_master_script_en.md",
+        "dest": "repo"
+      },
+      "flashcards": {
+        "name": "ep01_flashcards_en.json",
+        "size": 17021,
+        "url": "episodes/new-heaven-and-new-earth/ep01_flashcards_en.json",
+        "dest": "repo"
+      },
+      "report": {
+        "name": "ep01_report_briefing_en.md",
+        "size": 8098,
+        "url": "episodes/new-heaven-and-new-earth/ep01_report_briefing_en.md",
+        "dest": "repo"
+      }
     }
   }
 ]
