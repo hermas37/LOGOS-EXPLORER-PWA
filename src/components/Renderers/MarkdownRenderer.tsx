@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { FileText, Loader2, AlertTriangle } from 'lucide-react';
+import { FileText, Loader2, AlertTriangle, X } from 'lucide-react';
 import { toFetchUrl } from './assetUrl';
+import { stripFrontMatter } from '../../lib/digDeeper';
 
 interface MarkdownRendererProps {
   url: string;
   title: string;
+  /** When provided, an X control renders next to the title — used by Dig Deeper to return to its entry list. */
+  onClose?: () => void;
 }
 
 type Block =
@@ -172,7 +175,7 @@ function renderBlocks(blocks: Block[]): React.ReactNode[] {
   return out;
 }
 
-export default function MarkdownRenderer({ url, title }: MarkdownRendererProps) {
+export default function MarkdownRenderer({ url, title, onClose }: MarkdownRendererProps) {
   const [state, setState] = useState<{ status: 'loading' | 'error' | 'ready'; content: string; error?: string }>({
     status: 'loading',
     content: '',
@@ -187,7 +190,7 @@ export default function MarkdownRenderer({ url, title }: MarkdownRendererProps) 
         return res.text();
       })
       .then((text) => {
-        if (!cancelled) setState({ status: 'ready', content: text });
+        if (!cancelled) setState({ status: 'ready', content: stripFrontMatter(text) });
       })
       .catch((err) => {
         if (!cancelled) setState({ status: 'error', content: '', error: err instanceof Error ? err.message : String(err) });
@@ -199,9 +202,20 @@ export default function MarkdownRenderer({ url, title }: MarkdownRendererProps) 
 
   return (
     <div className="space-y-4 pb-24">
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
-        <FileText className="w-5 h-5 text-amber-500 shrink-0" />
-        <h3 className="font-display text-lg font-semibold text-slate-100">{title}</h3>
+      <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <FileText className="w-5 h-5 text-amber-500 shrink-0" />
+          <h3 className="font-display text-lg font-semibold text-slate-100 truncate">{title}</h3>
+        </div>
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="shrink-0 p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
       </div>
 
       {state.status === 'loading' && (

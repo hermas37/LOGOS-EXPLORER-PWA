@@ -10,7 +10,6 @@ import {
   ChevronDown,
   AlertTriangle,
   Loader2,
-  FileText,
   Plus,
   Trash2,
   ArrowRight,
@@ -21,20 +20,28 @@ import {
   Presentation,
   BookOpen,
   Layers,
-  Network,
   CircleCheck,
   CircleDashed,
   RotateCw,
   Image as ImageIcon,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import type { AssetDestination, AssetRole, Devotional, EpisodeManifest, LanguageEntry } from '../types';
+import type {
+  AssetDestination,
+  AssetRole,
+  Devotional,
+  DigDeeperEntry,
+  EpisodeManifest,
+  LanguageAssets,
+  LanguageEntry,
+} from '../types';
+import { deriveTitleFromFilename, parseDigDeeperMarkdown } from '../lib/digDeeper';
 
 /* ============================================================================
    PUBLISHING CONSOLE
-   One drop zone. Files sort themselves into two lanes on filename + extension:
+   One drop zone. Files sort themselves into two lanes on file extension alone:
    LIGHT (text/data -> committed to the GitHub repo) and
-   HEAVY (audio/video/images/pdf -> streamed to Vercel Blob CDN).
+   HEAVY (audio/images/pdf -> streamed to Vercel Blob CDN).
    A trailing _en / _id / _es on the filename picks which language the asset
    belongs to under languages[lang].assets — no suffix defaults to en.
    Tokens never touch this component — /api/blob-upload and /api/publish read
@@ -52,75 +59,49 @@ interface RoleDef {
   icon: LucideIcon;
   dest: AssetDestination;
   ext: string[];
-  hints: string[];
   blurb: string;
 }
 
 const ROLES: Record<AssetRole, RoleDef> = {
   audioOverview: {
     key: 'audioOverview', label: 'Audio Overview', short: 'Audio',
-    icon: Headphones, dest: HEAVY, ext: ['mp3', 'wav', 'm4a'],
-    hints: ['audio', 'overview', 'deepdive', 'deep-dive', 'podcast', 'narration'],
+    icon: Headphones, dest: HEAVY, ext: ['m4a', 'mp3', 'wav'],
     blurb: 'The NotebookLM two-host conversation. Required for a language to be offered.',
   },
   slideDeck: {
     key: 'slideDeck', label: 'Slide Deck', short: 'Slides',
     icon: Presentation, dest: HEAVY, ext: ['pdf'],
-    hints: ['slide', 'deck', 'presentation'],
     blurb: 'Exported deck with presenter notes.',
   },
   infographic: {
     key: 'infographic', label: 'Infographic', short: 'Infographic',
-    icon: ImageIcon, dest: HEAVY, ext: ['png', 'jpg', 'jpeg', 'webp'],
-    hints: ['infographic', 'graphic', 'poster', 'diagram', 'chart'],
+    icon: ImageIcon, dest: HEAVY, ext: ['webp', 'png', 'jpg', 'jpeg'],
     blurb: 'One-page visual explainer.',
-  },
-  mindmap: {
-    key: 'mindmap', label: 'Mindmap', short: 'Mindmap',
-    icon: Network, dest: LIGHT, ext: ['md'],
-    hints: ['mindmap', 'mind-map', 'map', 'concept', 'outline'],
-    blurb: 'Tabbed text concept outline, not an image.',
-  },
-  masterScript: {
-    key: 'masterScript', label: 'Master Script', short: 'Script',
-    icon: BookOpen, dest: LIGHT, ext: ['md', 'txt'],
-    hints: ['transcript', 'script', 'master', 'source', 'story'],
-    blurb: 'The single source story the episode came from.',
-  },
-  report: {
-    key: 'report', label: 'Report', short: 'Report',
-    icon: FileText, dest: LIGHT, ext: ['md', 'txt'],
-    hints: ['report', 'briefing', 'brief', 'study', 'guide', 'faq', 'timeline'],
-    blurb: 'Briefing doc, study guide, FAQ.',
   },
   flashcards: {
     key: 'flashcards', label: 'Flashcards', short: 'Cards',
     icon: Layers, dest: LIGHT, ext: ['json', 'csv'],
-    hints: ['flashcard', 'card', 'term', 'glossary', 'vocab'],
     blurb: 'front / back / note pairs.',
+  },
+  digDeeper: {
+    key: 'digDeeper', label: 'Dig Deeper', short: 'Dig Deeper',
+    icon: BookOpen, dest: LIGHT, ext: ['md', 'txt'],
+    blurb: 'Further reading. The only role that takes more than one file per language.',
   },
 };
 
 const ROLE_LIST = Object.values(ROLES);
+const MULTI_FILE_ROLE: AssetRole = 'digDeeper';
 
 const EMPTY_DEVOTIONAL: Devotional = { quote: '', quoteSource: '', verse: '', verseRef: '', reflection: '' };
 const EMPTY_LANGUAGE_ENTRY: LanguageEntry = { assets: {}, devotional: null };
 
-/** Guess the role from filename keywords first, extension second. */
-function detectRole(fileName: string): { role: AssetRole | null; confident: boolean } {
+/** Extension alone decides the role — no filename keyword sniffing. */
+function detectRole(fileName: string): AssetRole | null {
   const lower = fileName.toLowerCase();
   const ext = lower.includes('.') ? lower.split('.').pop()! : '';
-  const base = lower.replace(/\.[^.]+$/, '');
-
-  let best: RoleDef | null = null;
-  let bestScore = 0;
-  for (const r of ROLE_LIST) {
-    if (!r.ext.includes(ext)) continue;
-    let score = 1; // extension alone is a weak match
-    for (const h of r.hints) if (base.includes(h)) score += 4;
-    if (score > bestScore) { bestScore = score; best = r; }
-  }
-  return best ? { role: best.key, confident: bestScore >= 5 } : { role: null, confident: false };
+  const match = ROLE_LIST.find((r) => r.ext.includes(ext));
+  return match ? match.key : null;
 }
 
 /** A trailing _en / _id / _es before the extension picks the language. No match falls back to en. */
@@ -157,8 +138,10 @@ interface StagedFile {
   name: string;
   size: number;
   role: AssetRole | null;
-  confident: boolean;
   lang: string;
+  /** Dig Deeper only — parsed (or filename-derived) once the file's text has been read. Undefined while parsing. */
+  digDeeperTitle?: string;
+  digDeeperDescription?: string;
 }
 
 type StepStatus = 'pending' | 'active' | 'done' | 'error';
@@ -178,6 +161,21 @@ interface AdminDashboardProps {
   manifests: EpisodeManifest[];
   onManifestUpdate: (updatedManifests: EpisodeManifest[]) => void;
   selectedEpisodeId: string;
+}
+
+/** Accumulates staged/uploaded files into a per-language asset patch — digDeeper appends, every other role sets. */
+function makeAssetAccumulator() {
+  const store: Record<string, LanguageAssets> = {};
+  const put = (lang: string, role: AssetRole, url: string, meta?: { title: string; description: string }) => {
+    const current = store[lang] ?? {};
+    if (role === MULTI_FILE_ROLE) {
+      const entry: DigDeeperEntry = { title: meta?.title ?? '', description: meta?.description ?? '', url };
+      store[lang] = { ...current, digDeeper: [...(current.digDeeper ?? []), entry] };
+    } else {
+      store[lang] = { ...current, [role]: url };
+    }
+  };
+  return { store, put };
 }
 
 export default function AdminDashboard({ manifests, onManifestUpdate, selectedEpisodeId }: AdminDashboardProps) {
@@ -204,23 +202,49 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
   }, [ep, manifests, onManifestUpdate]);
 
   const addFiles = useCallback((fileList: FileList) => {
-    const next: StagedFile[] = Array.from(fileList).map((f, i) => {
-      const { role, confident } = detectRole(f.name);
+    const files = Array.from(fileList);
+    const next: StagedFile[] = files.map((f, i) => {
+      const role = detectRole(f.name);
       const lang = detectLanguage(f.name);
-      return { uid: `${Date.now()}-${i}-${f.name}`, file: f, name: f.name, size: f.size, role, confident, lang };
+      return { uid: `${Date.now()}-${i}-${f.name}`, file: f, name: f.name, size: f.size, role, lang };
     });
     setStaged((prev) => [...prev, ...next]);
+
+    next
+      .filter((s) => s.role === MULTI_FILE_ROLE)
+      .forEach((s) => {
+        s.file.text().then((text) => {
+          const { title, description } = parseDigDeeperMarkdown(text, s.name);
+          setStaged((prev) => prev.map((p) => (p.uid === s.uid ? { ...p, digDeeperTitle: title, digDeeperDescription: description } : p)));
+        });
+      });
   }, []);
 
   const setRole = (uid: string, role: AssetRole) =>
-    setStaged((prev) => prev.map((s) => (s.uid === uid ? { ...s, role, confident: true } : s)));
+    setStaged((prev) => prev.map((s) => (s.uid === uid ? { ...s, role } : s)));
   const removeStaged = (uid: string) => setStaged((prev) => prev.filter((s) => s.uid !== uid));
 
   const light = staged.filter((s): s is StagedFile & { role: AssetRole } => !!s.role && ROLES[s.role].dest === LIGHT);
   const heavy = staged.filter((s): s is StagedFile & { role: AssetRole } => !!s.role && ROLES[s.role].dest === HEAVY);
   const unknown = staged.filter((s) => !s.role);
+
+  /** Every role except Dig Deeper takes exactly one file per language — flag any that collide. */
+  const duplicateUids = useMemo(() => {
+    const seen = new Map<string, string[]>();
+    for (const s of staged) {
+      if (!s.role || s.role === MULTI_FILE_ROLE) continue;
+      const key = `${s.lang}:${s.role}`;
+      seen.set(key, [...(seen.get(key) ?? []), s.uid]);
+    }
+    const dupes = new Set<string>();
+    for (const uids of seen.values()) {
+      if (uids.length > 1) uids.forEach((uid) => dupes.add(uid));
+    }
+    return dupes;
+  }, [staged]);
+
   const isPublishing = !!publishing && !publishing.done && !publishing.error;
-  const canPublish = staged.length > 0 && unknown.length === 0 && password.trim().length > 0 && !!ep && !isPublishing;
+  const canPublish = staged.length > 0 && unknown.length === 0 && duplicateUids.size === 0 && password.trim().length > 0 && !!ep && !isPublishing;
 
   const addEpisode = () => {
     const n = manifests.length + 1;
@@ -267,11 +291,7 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
     updateStep('validate', 'active');
 
     try {
-      // Assets uploaded this batch, grouped by the language detected from each filename.
-      const uploadedAssets: Record<string, Partial<Record<AssetRole, string>>> = {};
-      const putAsset = (lang: string, role: AssetRole, url: string) => {
-        uploadedAssets[lang] = { ...(uploadedAssets[lang] || {}), [role]: url };
-      };
+      const { store: uploadedAssets, put: putAsset } = makeAssetAccumulator();
 
       // Heavy files go to Blob first — the manifest needs their URLs.
       updateStep('validate', 'done');
@@ -295,7 +315,10 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
           const dataUrl = await readAsDataURL(f.file);
           const contentBase64 = dataUrl.slice(dataUrl.indexOf(',') + 1);
           const manifestPath = `episodes/${slug}/${f.name}`;
-          putAsset(f.lang, f.role, manifestPath);
+          const meta = f.role === MULTI_FILE_ROLE
+            ? { title: f.digDeeperTitle ?? deriveTitleFromFilename(f.name), description: f.digDeeperDescription ?? '' }
+            : undefined;
+          putAsset(f.lang, f.role, manifestPath, meta);
           return { path: `public/${manifestPath}`, contentBase64 };
         })
       );
@@ -303,7 +326,12 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
       const nextLanguages = { ...ep.languages };
       for (const [lang, assets] of Object.entries(uploadedAssets)) {
         const current = nextLanguages[lang] ?? EMPTY_LANGUAGE_ENTRY;
-        nextLanguages[lang] = { ...current, assets: { ...current.assets, ...assets } };
+        const { digDeeper: newDigDeeper, ...rest } = assets;
+        const mergedDigDeeper = newDigDeeper ? [...(current.assets.digDeeper ?? []), ...newDigDeeper] : current.assets.digDeeper;
+        nextLanguages[lang] = {
+          ...current,
+          assets: { ...current.assets, ...rest, ...(mergedDigDeeper ? { digDeeper: mergedDigDeeper } : {}) },
+        };
       }
 
       const updatedEpisode: EpisodeManifest = {
@@ -361,8 +389,9 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
   const devotional = ep.languages[ep.defaultLanguage]?.devotional ?? EMPTY_DEVOTIONAL;
   const liveAssets: Partial<Record<AssetRole, boolean>> = {};
   for (const entry of Object.values(ep.languages)) {
-    for (const role of Object.keys(entry.assets) as AssetRole[]) {
-      if (entry.assets[role]) liveAssets[role] = true;
+    for (const role of ROLE_LIST.map((r) => r.key)) {
+      const value = role === MULTI_FILE_ROLE ? entry.assets.digDeeper?.length : entry.assets[role as Exclude<AssetRole, 'digDeeper'>];
+      if (value) liveAssets[role] = true;
     }
   }
   const stagedRoles = new Set<AssetRole>(staged.map((s) => s.role).filter((r): r is AssetRole => !!r));
@@ -410,7 +439,7 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
         </div>
       </Step>
 
-      <Step n={2} title="Drop the Studio exports" caption="Select everything at once. Files sort themselves — you only fix what's marked. A trailing _en / _id / _es picks the language; no suffix means English.">
+      <Step n={2} title="Drop the Studio exports" caption="Select everything at once. Files sort themselves by extension — you only fix what's flagged. A trailing _en / _id / _es picks the language; no suffix means English.">
         <DropZone onFiles={addFiles} />
 
         {unknown.length > 0 && (
@@ -427,10 +456,24 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
           </div>
         )}
 
+        {duplicateUids.size > 0 && (
+          <div className="mt-4 rounded-xl p-4 flex gap-3 bg-rose-500/10 border border-rose-500/40">
+            <AlertTriangle className="w-[17px] h-[17px] text-rose-400 shrink-0 mt-0.5" />
+            <div>
+              <div className="text-sm text-slate-100">
+                {duplicateUids.size} file{duplicateUids.size > 1 ? 's conflict' : ' conflicts'} on the same slot
+              </div>
+              <div className="text-xs mt-1 text-slate-400">
+                Every role except Dig Deeper takes one file per language. Remove the extras or reassign their role. Publishing stays locked until this is clear.
+              </div>
+            </div>
+          </div>
+        )}
+
         {staged.length > 0 && (
           <div className="grid md:grid-cols-2 gap-4 mt-5">
-            <Lane title="Light — goes into the repo" sub="Text and data, versioned in git" icon={Github} accent="sky" rows={[...light, ...unknown]} onRole={setRole} onRemove={removeStaged} />
-            <Lane title="Heavy — goes to the CDN" sub="Audio, images, PDFs" icon={Cloud} accent="amber" rows={heavy} onRole={setRole} onRemove={removeStaged} />
+            <Lane title="Light — goes into the repo" sub="Text and data, versioned in git" icon={Github} accent="sky" rows={[...light, ...unknown]} onRole={setRole} onRemove={removeStaged} duplicateUids={duplicateUids} />
+            <Lane title="Heavy — goes to the CDN" sub="Audio, images, PDFs" icon={Cloud} accent="amber" rows={heavy} onRole={setRole} onRemove={removeStaged} duplicateUids={duplicateUids} />
           </div>
         )}
 
@@ -462,7 +505,9 @@ export default function AdminDashboard({ manifests, onManifestUpdate, selectedEp
               ? 'Drop at least one file to publish.'
               : unknown.length > 0
                 ? 'Resolve the flagged files first.'
-                : 'Enter the admin password to publish.'}
+                : duplicateUids.size > 0
+                  ? 'Resolve the conflicting files first.'
+                  : 'Enter the admin password to publish.'}
           </p>
         )}
 
@@ -547,7 +592,7 @@ function DropZone({ onFiles }: { onFiles: (files: FileList) => void }) {
       <Upload className={`w-6 h-6 mx-auto ${over ? 'text-amber-400' : 'text-slate-500'}`} strokeWidth={1.4} />
       <div className="mt-4 text-lg text-slate-100">Drop your Studio exports here</div>
       <div className="text-sm mt-2 text-slate-400">
-        Audio, slides, infographic, mindmap, reports, flashcards — all in one go.
+        Audio, slides, infographic, flashcards, dig deeper reading — all in one go.
       </div>
       <div className="font-mono text-xs mt-4 tracking-wider text-slate-600">
         MP3 · WAV · M4A · PDF · PNG · JPG · WEBP · MD · TXT · JSON · CSV
@@ -556,9 +601,10 @@ function DropZone({ onFiles }: { onFiles: (files: FileList) => void }) {
   );
 }
 
-function Lane({ title, sub, icon: Icon, accent, rows, onRole, onRemove }: {
+function Lane({ title, sub, icon: Icon, accent, rows, onRole, onRemove, duplicateUids }: {
   title: string; sub: string; icon: LucideIcon; accent: 'sky' | 'amber';
   rows: StagedFile[]; onRole: (uid: string, role: AssetRole) => void; onRemove: (uid: string) => void;
+  duplicateUids: Set<string>;
 }) {
   const accentText = accent === 'sky' ? 'text-sky-400' : 'text-amber-400';
   return (
@@ -575,17 +621,17 @@ function Lane({ title, sub, icon: Icon, accent, rows, onRole, onRemove }: {
         <div className="text-xs py-4 text-center text-slate-600">Nothing here yet</div>
       ) : (
         <div className="flex flex-col gap-2">
-          {rows.map((r) => <StagedRow key={r.uid} r={r} onRole={onRole} onRemove={onRemove} />)}
+          {rows.map((r) => <StagedRow key={r.uid} r={r} onRole={onRole} onRemove={onRemove} duplicate={duplicateUids.has(r.uid)} />)}
         </div>
       )}
     </div>
   );
 }
 
-function StagedRow({ r, onRole, onRemove }: {
-  key?: React.Key; r: StagedFile; onRole: (uid: string, role: AssetRole) => void; onRemove: (uid: string) => void;
+function StagedRow({ r, onRole, onRemove, duplicate }: {
+  key?: React.Key; r: StagedFile; onRole: (uid: string, role: AssetRole) => void; onRemove: (uid: string) => void; duplicate: boolean;
 }) {
-  const flagged = !r.role;
+  const flagged = !r.role || duplicate;
   const Icon = r.role ? ROLES[r.role].icon : AlertTriangle;
   return (
     <div className={`rounded-lg p-3 bg-slate-950 border ${flagged ? 'border-rose-500/50' : 'border-slate-800'}`}>
@@ -595,7 +641,7 @@ function StagedRow({ r, onRole, onRemove }: {
           <div className="text-xs truncate text-slate-100">{r.name}</div>
           <div className="font-mono mt-0.5 text-[10px] text-slate-500">
             {fmtBytes(r.size)}
-            {r.role && !r.confident && <span className="text-amber-400"> · guessed from file type</span>}
+            {duplicate && <span className="text-rose-400"> · conflicts with another file in this slot</span>}
           </div>
         </div>
         <button onClick={() => onRemove(r.uid)} className="text-slate-500 hover:text-rose-400 cursor-pointer">
@@ -613,6 +659,16 @@ function StagedRow({ r, onRole, onRemove }: {
         <option value="" disabled>Choose a role…</option>
         {ROLE_LIST.map((x) => <option key={x.key} value={x.key}>{x.label}</option>)}
       </select>
+
+      {r.role === MULTI_FILE_ROLE && (
+        <div className="mt-2.5 rounded-md p-2.5 bg-slate-900 border border-slate-800 space-y-1">
+          <div className="font-mono text-[10px] tracking-wider text-slate-500">PARSED</div>
+          <div className="text-xs text-slate-100">{r.digDeeperTitle ?? 'Parsing…'}</div>
+          {r.digDeeperTitle !== undefined && (
+            <div className="text-[11px] text-slate-400">{r.digDeeperDescription || 'No description'}</div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -702,7 +758,7 @@ function PublishLog({ p, onReset }: { p: PublishState; onReset: () => void }) {
 
 function ManifestPreview({ ep, staged, slug }: { ep: EpisodeManifest; staged: StagedFile[]; slug: string }) {
   const json = useMemo(() => {
-    const languages: Record<string, { assets: Record<string, string>; devotional: Devotional | null }> = {};
+    const languages: Record<string, { assets: LanguageAssets; devotional: Devotional | null }> = {};
     for (const [lang, entry] of Object.entries(ep.languages)) {
       languages[lang] = { assets: { ...entry.assets }, devotional: entry.devotional };
     }
@@ -712,7 +768,17 @@ function ManifestPreview({ ep, staged, slug }: { ep: EpisodeManifest; staged: St
         ? `https://<blob-store>.public.blob.vercel-storage.com/episodes/${slug}/${s.name}`
         : `episodes/${slug}/${s.name}`;
       if (!languages[s.lang]) languages[s.lang] = { assets: {}, devotional: null };
-      languages[s.lang] = { ...languages[s.lang], assets: { ...languages[s.lang].assets, [s.role]: url } };
+      const current = languages[s.lang].assets;
+      if (s.role === MULTI_FILE_ROLE) {
+        const entry: DigDeeperEntry = {
+          title: s.digDeeperTitle ?? deriveTitleFromFilename(s.name),
+          description: s.digDeeperDescription ?? '',
+          url,
+        };
+        languages[s.lang] = { ...languages[s.lang], assets: { ...current, digDeeper: [...(current.digDeeper ?? []), entry] } };
+      } else {
+        languages[s.lang] = { ...languages[s.lang], assets: { ...current, [s.role]: url } };
+      }
     }
     const out = {
       episodeId: ep.episodeId,

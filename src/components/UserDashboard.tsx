@@ -3,22 +3,21 @@ import { motion, AnimatePresence } from 'motion/react';
 import type { LucideIcon } from 'lucide-react';
 import {
   ChevronRight,
+  ChevronDown,
   Sparkles,
   Music,
   Presentation,
   Image as ImageIcon,
-  Network,
   BookOpen,
-  FileText,
   Layers,
   Feather,
   Languages,
 } from 'lucide-react';
-import { AssetRole, Devotional, EpisodeManifest } from '../types';
-import MarkdownRenderer from './Renderers/MarkdownRenderer';
+import { AssetRole, Devotional, DigDeeperEntry, EpisodeManifest, SingleAssetRole } from '../types';
 import SlideRenderer from './Renderers/SlideRenderer';
 import FlashcardRenderer from './Renderers/FlashcardRenderer';
 import AudioRenderer from './Renderers/AudioRenderer';
+import DigDeeperRenderer from './Renderers/DigDeeperRenderer';
 
 interface UserDashboardProps {
   manifests: EpisodeManifest[];
@@ -41,6 +40,12 @@ interface ResolvedAsset {
   fallback: boolean;
 }
 
+interface ResolvedDigDeeper {
+  entries: DigDeeperEntry[];
+  lang: string;
+  fallback: boolean;
+}
+
 interface ResolvedDevotional {
   devotional: Devotional;
   lang: string;
@@ -51,10 +56,8 @@ const ASSET_ROWS: { key: AssetRole; label: string; icon: LucideIcon }[] = [
   { key: 'audioOverview', label: 'Audio Overview', icon: Music },
   { key: 'slideDeck', label: 'Slide Deck', icon: Presentation },
   { key: 'infographic', label: 'Infographic', icon: ImageIcon },
-  { key: 'mindmap', label: 'Mindmap', icon: Network },
-  { key: 'masterScript', label: 'Master Script', icon: BookOpen },
-  { key: 'report', label: 'Report', icon: FileText },
   { key: 'flashcards', label: 'Flashcards', icon: Layers },
+  { key: 'digDeeper', label: 'Dig Deeper', icon: BookOpen },
 ];
 
 const LANGUAGE_LABELS: Record<string, string> = {
@@ -65,12 +68,34 @@ const LANGUAGE_LABELS: Record<string, string> = {
 
 const languageLabel = (code: string) => LANGUAGE_LABELS[code] ?? code.toUpperCase();
 
+/** Raw presence of an asset for a language — no fallback. Used to decide which languages appear in the row's controls. */
+function hasAsset(ep: EpisodeManifest, lang: string, key: AssetRole): boolean {
+  const entry = ep.languages[lang];
+  if (!entry) return false;
+  if (key === 'digDeeper') return (entry.assets.digDeeper?.length ?? 0) > 0;
+  return !!entry.assets[key as SingleAssetRole];
+}
+
+function otherLanguagesWith(ep: EpisodeManifest, key: AssetRole): string[] {
+  return Object.keys(ep.languages)
+    .filter((lang) => lang !== ep.defaultLanguage && hasAsset(ep, lang, key))
+    .sort((a, b) => a.localeCompare(b));
+}
+
 /** Step 1: this language. Step 2: fall back to the default language. Step 3: render nothing. */
-function resolveAsset(ep: EpisodeManifest, key: AssetRole, lang: string): ResolvedAsset | null {
+function resolveAsset(ep: EpisodeManifest, key: SingleAssetRole, lang: string): ResolvedAsset | null {
   const own = ep.languages[lang]?.assets[key];
   if (own) return { url: own, lang, fallback: false };
   const fallbackUrl = ep.languages[ep.defaultLanguage]?.assets[key];
   if (fallbackUrl) return { url: fallbackUrl, lang: ep.defaultLanguage, fallback: true };
+  return null;
+}
+
+function resolveDigDeeper(ep: EpisodeManifest, lang: string): ResolvedDigDeeper | null {
+  const own = ep.languages[lang]?.assets.digDeeper;
+  if (own && own.length > 0) return { entries: own, lang, fallback: false };
+  const fallback = ep.languages[ep.defaultLanguage]?.assets.digDeeper;
+  if (fallback && fallback.length > 0) return { entries: fallback, lang: ep.defaultLanguage, fallback: true };
   return null;
 }
 
@@ -108,20 +133,10 @@ export default function UserDashboard({
     );
   }
 
-  const languageColumns = Object.keys(currentEpisode.languages)
-    .filter((lang) => !!currentEpisode.languages[lang]?.assets.audioOverview)
-    .sort((a, b) => {
-      if (a === currentEpisode.defaultLanguage) return -1;
-      if (b === currentEpisode.defaultLanguage) return 1;
-      return a.localeCompare(b);
-    });
-
   const openCell = (key: SelectionKey, lang: string) => {
     setSelection({ key, lang });
     setSelectedStudyId(key);
   };
-
-  const isActiveCell = (key: SelectionKey, lang: string) => selection?.key === key && selection?.lang === lang;
 
   return (
     <div className="flex flex-col h-full bg-[#0f172a] text-slate-100 font-sans select-none">
@@ -201,30 +216,36 @@ export default function UserDashboard({
 
       {/* Availability table + detail panel */}
       <div className="flex-grow overflow-y-auto px-4 py-5 custom-scrollbar relative space-y-3">
-        {ASSET_ROWS.map((row) => (
-          <AvailabilityRow
-            key={row.key}
-            label={row.label}
-            icon={row.icon}
-            languages={languageColumns}
-            resolveCell={(lang) => resolveAsset(currentEpisode, row.key, lang)}
-            isActive={(lang) => isActiveCell(row.key, lang)}
-            onOpen={(lang) => openCell(row.key, lang)}
-          />
-        ))}
+        {ASSET_ROWS.map((row) => {
+          if (!hasAsset(currentEpisode, currentEpisode.defaultLanguage, row.key) && otherLanguagesWith(currentEpisode, row.key).length === 0) {
+            return null;
+          }
+          return (
+            <AvailabilityRow
+              key={row.key}
+              label={row.label}
+              icon={row.icon}
+              defaultLanguage={currentEpisode.defaultLanguage}
+              otherLanguages={otherLanguagesWith(currentEpisode, row.key)}
+              activeLang={selection?.key === row.key ? selection.lang : null}
+              onSelect={(lang) => openCell(row.key, lang)}
+            />
+          );
+        })}
 
-        <AvailabilityRow
-          label="Devotional"
-          icon={Feather}
-          languages={languageColumns}
-          accent="cream"
-          resolveCell={(lang) => {
-            const resolved = resolveDevotional(currentEpisode, lang);
-            return resolved ? { fallback: resolved.fallback } : null;
-          }}
-          isActive={(lang) => isActiveCell('devotional', lang)}
-          onOpen={(lang) => openCell('devotional', lang)}
-        />
+        {Object.keys(currentEpisode.languages).some((lang) => !!currentEpisode.languages[lang]?.devotional) && (
+          <AvailabilityRow
+            label="Devotional"
+            icon={Feather}
+            accent="cream"
+            defaultLanguage={currentEpisode.defaultLanguage}
+            otherLanguages={Object.keys(currentEpisode.languages)
+              .filter((lang) => lang !== currentEpisode.defaultLanguage && !!currentEpisode.languages[lang]?.devotional)
+              .sort((a, b) => a.localeCompare(b))}
+            activeLang={selection?.key === 'devotional' ? selection.lang : null}
+            onSelect={(lang) => openCell('devotional', lang)}
+          />
+        )}
 
         <div className="pt-3">
           <AnimatePresence mode="wait">
@@ -240,7 +261,7 @@ export default function UserDashboard({
               </motion.div>
             ) : (
               <div className="text-center text-xs text-slate-500 py-10 border border-dashed border-slate-800 rounded-xl">
-                Tap a language chip above to open that asset.
+                Tap a language above to open that asset.
               </div>
             )}
           </AnimatePresence>
@@ -255,20 +276,14 @@ export default function UserDashboard({
 interface AvailabilityRowProps {
   label: string;
   icon: LucideIcon;
-  languages: string[];
   accent?: 'default' | 'cream';
-  resolveCell: (lang: string) => { fallback: boolean } | null;
-  isActive: (lang: string) => boolean;
-  onOpen: (lang: string) => void;
+  defaultLanguage: string;
+  otherLanguages: string[];
+  activeLang: string | null;
+  onSelect: (lang: string) => void;
 }
 
-function AvailabilityRow({ label, icon: Icon, languages, accent = 'default', resolveCell, isActive, onOpen }: AvailabilityRowProps) {
-  const chips = languages
-    .map((lang) => ({ lang, resolved: resolveCell(lang) }))
-    .filter((c): c is { lang: string; resolved: { fallback: boolean } } => !!c.resolved);
-
-  if (chips.length === 0) return null;
-
+function AvailabilityRow({ label, icon: Icon, accent = 'default', defaultLanguage, otherLanguages, activeLang, onSelect }: AvailabilityRowProps) {
   return (
     <div
       className={`rounded-xl border p-3.5 space-y-2.5 ${
@@ -279,25 +294,76 @@ function AvailabilityRow({ label, icon: Icon, languages, accent = 'default', res
         <Icon className="w-4 h-4 text-amber-500 shrink-0" />
         <span className="text-xs font-semibold">{label}</span>
       </div>
-      <div className="flex flex-wrap gap-2">
-        {chips.map(({ lang, resolved }) => {
-          const active = isActive(lang);
-          return (
-            <button
-              key={lang}
-              onClick={() => onOpen(lang)}
-              className={`px-3 py-1.5 rounded-lg border text-[11px] font-mono font-semibold transition-all cursor-pointer ${
-                active
-                  ? 'border-amber-500 bg-amber-500/15 text-amber-300'
-                  : 'border-slate-700 bg-slate-950 text-slate-300 hover:border-slate-600 hover:bg-slate-900'
-              }`}
-            >
-              {languageLabel(lang)}
-              {resolved.fallback && <span className="ml-1 text-slate-500">(EN)</span>}
-            </button>
-          );
-        })}
-      </div>
+      <LanguagePicker defaultLanguage={defaultLanguage} otherLanguages={otherLanguages} activeLang={activeLang} onSelect={onSelect} />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------ language picker --- */
+
+interface LanguagePickerProps {
+  defaultLanguage: string;
+  otherLanguages: string[];
+  activeLang: string | null;
+  onSelect: (lang: string) => void;
+}
+
+const pillClass = (active: boolean) =>
+  `px-3 py-1.5 rounded-lg border text-[11px] font-mono font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+    active
+      ? 'border-amber-500 bg-amber-500/15 text-amber-300'
+      : 'border-slate-700 bg-slate-950 text-slate-300 hover:border-slate-600 hover:bg-slate-900'
+  }`;
+
+function LanguagePicker({ defaultLanguage, otherLanguages, activeLang, onSelect }: LanguagePickerProps) {
+  const [open, setOpen] = useState(false);
+  const isDefaultActive = activeLang === defaultLanguage;
+  const isOtherActive = activeLang !== null && otherLanguages.includes(activeLang);
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button onClick={() => onSelect(defaultLanguage)} className={pillClass(isDefaultActive)}>
+        {languageLabel(defaultLanguage)}
+      </button>
+
+      {otherLanguages.length > 0 && (
+        <div className="relative">
+          <button onClick={() => setOpen((v) => !v)} className={pillClass(isOtherActive)}>
+            <span>Available Language</span>
+            <ChevronDown className="w-3 h-3" />
+          </button>
+
+          <AnimatePresence>
+            {open && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.12 }}
+                  className="absolute left-0 top-full mt-1.5 min-w-[10rem] bg-slate-950 border border-slate-800 rounded-lg shadow-2xl z-50 overflow-hidden divide-y divide-slate-900"
+                >
+                  {otherLanguages.map((lang) => (
+                    <button
+                      key={lang}
+                      onClick={() => {
+                        onSelect(lang);
+                        setOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left text-[11px] font-mono transition-colors hover:bg-slate-900/60 cursor-pointer ${
+                        lang === activeLang ? 'text-amber-400 font-bold' : 'text-slate-300'
+                      }`}
+                    >
+                      {languageLabel(lang)}
+                    </button>
+                  ))}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }
@@ -314,6 +380,17 @@ function DetailPanel({ episode, selection }: { episode: EpisodeManifest; selecti
       <div className="space-y-3">
         <FallbackBanner tappedLang={lang} resolved={resolved} />
         <DevotionalCard devotional={resolved.devotional} />
+      </div>
+    );
+  }
+
+  if (key === 'digDeeper') {
+    const resolved = resolveDigDeeper(episode, lang);
+    if (!resolved) return null;
+    return (
+      <div className="space-y-3">
+        <FallbackBanner tappedLang={lang} resolved={resolved} />
+        <DigDeeperRenderer entries={resolved.entries} />
       </div>
     );
   }
@@ -335,9 +412,6 @@ function DetailPanel({ episode, selection }: { episode: EpisodeManifest; selecti
           <img src={resolved.url} alt="Episode infographic" className="w-full rounded-xl border border-slate-800" loading="lazy" />
         </div>
       )}
-      {key === 'mindmap' && <MarkdownRenderer url={resolved.url} title="Mindmap" />}
-      {key === 'masterScript' && <MarkdownRenderer url={resolved.url} title="Master Script" />}
-      {key === 'report' && <MarkdownRenderer url={resolved.url} title="Report" />}
       {key === 'flashcards' && <FlashcardRenderer url={resolved.url} />}
     </div>
   );
