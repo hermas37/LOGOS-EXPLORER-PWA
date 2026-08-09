@@ -1,4 +1,7 @@
-NEW HEAVEN AND NEW EARTH
+---
+title: NEW HEAVEN AND NEW EARTH
+description: what is new earth? why does bible describe it as something familiar but more beautiful, and alive?
+---
 
 Imagine you are walking barefoot through thick, wet grass early in the morning. Feel that specific chill against your skin—the freezing dew. Or imagine the exact smell of the air just after a heavy summer rain—that rich, earthy scent of petrichor. Picture the very first time you ever laid eyes on the ocean, the sheer scale of the horizon stretching out, the sound of the waves crashing against the sand. Or perhaps for you, it is a mountain sunrise, where the light hits the peaks and turns everything into brilliant gold, giving you an overwhelming sense of scale. Hold onto that feeling—that sense of total wonder—because we need to talk about what that feeling actually is.
 

@@ -14,10 +14,39 @@
           "audioOverview": "https://4gis32c7ro9bt3b7.public.blob.vercel-storage.com/episodes/new-heaven-and-new-earth/ep01_audio_overview_en.m4a",
           "slideDeck": "https://4gis32c7ro9bt3b7.public.blob.vercel-storage.com/episodes/new-heaven-and-new-earth/ep01_slides_en.pdf",
           "infographic": "https://4gis32c7ro9bt3b7.public.blob.vercel-storage.com/episodes/new-heaven-and-new-earth/ep01_infographic_en.webp",
-          "mindmap": "episodes/new-heaven-and-new-earth/ep01_mindmap_en.md",
-          "masterScript": "episodes/new-heaven-and-new-earth/ep01_master_script_en.md",
-          "report": "episodes/new-heaven-and-new-earth/ep01_report_briefing_en.md",
-          "flashcards": "episodes/new-heaven-and-new-earth/ep01_flashcards_en.json"
+          "flashcards": "episodes/new-heaven-and-new-earth/ep01_flashcards_en.json",
+          "digDeeper": [
+            {
+              "title": "Master script",
+              "description": "",
+              "url": "episodes/new-heaven-and-new-earth/ep01_master_script_en.md"
+            },
+            {
+              "title": "Report briefing",
+              "description": "",
+              "url": "episodes/new-heaven-and-new-earth/ep01_report_briefing_en.md"
+            },
+            {
+              "title": "The Mindmap of Renewal vs Replacement and Physicist Projection",
+              "description": "See view points of Renewal vs Trasformation vs Physicist's projection",
+              "url": "episodes/new-heaven-and-new-earth/ep01_mindmap_en.md"
+            },
+            {
+              "title": "A \"More Real\" World",
+              "description": "What is CS Lewis description of \"More Real\" world, why he thought it is more solid than this one.",
+              "url": "episodes/new-heaven-and-new-earth/ep01_more_real_world_en.md"
+            },
+            {
+              "title": "Report briefing",
+              "description": "",
+              "url": "episodes/new-heaven-and-new-earth/ep01_report_briefing_en.md"
+            },
+            {
+              "title": "NEW HEAVEN AND NEW EARTH",
+              "description": "what is new earth? why does bible describe it as something familiar but more beautiful, and alive?",
+              "url": "episodes/new-heaven-and-new-earth/ep01_master_script_en.md"
+            }
+          ]
         },
         "devotional": {
           "quote": "",
